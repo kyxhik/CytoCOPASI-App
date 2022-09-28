@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.tasks;
+package org.cytoscape.CytoCopasiApp.actions;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,7 +37,6 @@ import org.cytoscape.work.TaskMonitor;
 import org.COPASI.*;
 import org.cytoscape.CytoCopasiApp.AttributeUtil;
 import org.cytoscape.CytoCopasiApp.CyActivator;
-import org.cytoscape.CytoCopasiApp.MyCopasiPanel;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
 
 
@@ -136,7 +135,7 @@ public class CopasiFileReaderTask extends AbstractTask implements CyNetworkReade
                 throw new RuntimeException("Could not finish layout", e);
             }
         }
-
+        CyActivator.networkViewManager.addNetworkView(view);
         // finished
         return view;
     }
@@ -217,6 +216,7 @@ private static final int BUFFER_SIZE = 16384;
      //   }
            
            CyNetwork network = readModelInNetwork(dm.getModel(), xml);
+           CyActivator.netMgr.addNetwork(network);
            addAllNetworks(network);
            
            

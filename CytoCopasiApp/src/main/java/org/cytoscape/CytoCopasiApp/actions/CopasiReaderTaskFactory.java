@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.tasks;
+package org.cytoscape.CytoCopasiApp.actions;
 
 
 import java.io.ByteArrayInputStream;

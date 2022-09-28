@@ -55,16 +55,16 @@ import java.io.PrintWriter;
 import java.util.Properties;
 
 import org.cytoscape.CytoCopasiApp.Dynamic.SBMLSimulator;
-import org.cytoscape.CytoCopasiApp.actions.CreateNewModelAction;
+import org.cytoscape.CytoCopasiApp.Kegg.EKeggWebProps;
+import org.cytoscape.CytoCopasiApp.Kegg.KeggWebLoadAction;
+import org.cytoscape.CytoCopasiApp.actions.CopasiReaderTaskFactory;
 import org.cytoscape.CytoCopasiApp.actions.ImportAction;
-import org.cytoscape.CytoCopasiApp.actions.KeggWebLoadAction;
+import org.cytoscape.CytoCopasiApp.actions.NodeDoubleClickTaskFactory;
 import org.cytoscape.CytoCopasiApp.actions.SaveLayoutAction;
-import org.cytoscape.CytoCopasiApp.actions.SteadyStateTask;
-import org.cytoscape.CytoCopasiApp.actions.Optimize;
-import org.cytoscape.CytoCopasiApp.actions.ParameterScan;
-import org.cytoscape.CytoCopasiApp.actions.TimeCourseSimulationTask;
-import org.cytoscape.CytoCopasiApp.nodeedge.NodeDoubleClickTaskFactory;
-import org.cytoscape.CytoCopasiApp.tasks.CopasiReaderTaskFactory;
+import org.cytoscape.CytoCopasiApp.tasks.Optimize;
+import org.cytoscape.CytoCopasiApp.tasks.ParameterScan;
+import org.cytoscape.CytoCopasiApp.tasks.SteadyStateTask;
+import org.cytoscape.CytoCopasiApp.tasks.TimeCourseSimulationTask;
 
 
 
@@ -99,7 +99,7 @@ public class CyActivator extends AbstractCyActivator {
     public static CyEventHelper cyEventHelper;
     public static LoadNetworkFileTaskFactory loadNetworkTaskFactory;
     public static SynchronousTaskManager synchronousTaskManager;
-    public static CreateNewModelAction createNewModelAction;
+    
     public static MyCopasiPanel myCopasiPanel;
     public static FileUtil fileUtil;
     public static KeggWebLoadAction keggWebLoadAction;
@@ -184,16 +184,16 @@ public class CyActivator extends AbstractCyActivator {
         
        myCopasiPanel = new MyCopasiPanel(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
        registerService(context, myCopasiPanel, CytoPanelComponent.class, properties);
-        
+       saveLayoutAction = new SaveLayoutAction(cySwingApplication, fileUtil);
+       registerService(context, saveLayoutAction, CyAction.class, properties);
         importAction = new ImportAction(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
         registerService(context, importAction, CyAction.class, properties);
         
-        saveLayoutAction = new SaveLayoutAction(cySwingApplication, fileUtil);
-        registerService(context, saveLayoutAction, CyAction.class, properties);
+       
  
         TimeCourseSimulationTask timeCourseSimulationTask = new TimeCourseSimulationTask(cySwingApplication, fileUtil);
         //  PlotDataFactory plotDataFactory = new PlotDataFactory();
-          SteadyStateTask steadyStateTask = new SteadyStateTask(cySwingApplication, fileUtil);
+          SteadyStateTask steadyStateTask = new SteadyStateTask(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
           Optimize optimize = new Optimize(cySwingApplication, fileUtil);
           ParameterScan parameterScan = new ParameterScan(cySwingApplication, fileUtil);
          

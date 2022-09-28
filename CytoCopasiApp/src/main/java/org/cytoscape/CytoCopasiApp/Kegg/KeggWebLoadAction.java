@@ -1,9 +1,7 @@
-package org.cytoscape.CytoCopasiApp.actions;
+package org.cytoscape.CytoCopasiApp.Kegg;
 
 import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.CytoCopasiApp.CyActivator;
-import org.cytoscape.CytoCopasiApp.KeggWebLoadFrame;
-
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;

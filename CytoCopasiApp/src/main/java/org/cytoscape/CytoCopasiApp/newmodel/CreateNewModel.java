@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.actions;
+package org.cytoscape.CytoCopasiApp.newmodel;
 import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -52,8 +52,8 @@ import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.application.swing.CyMenuItem;
 import org.cytoscape.application.swing.CySwingApplication;
 
-public class CreateNewModelAction{
-	private static final Logger logger = LoggerFactory.getLogger(CreateNewModelAction.class);
+public class CreateNewModel{
+	private static final Logger logger = LoggerFactory.getLogger(CreateNewModel.class);
 	private static final long serialVersionUID = 1L;
 	private CyNetworkManager networkManager;
 	private CyNetworkViewManager networkViewManager;
@@ -203,7 +203,9 @@ public class CreateNewModelAction{
 	        AttributeUtil.set(network, e, "type", interactionType, String.class);
 	        CyLayoutAlgorithm layout = CyActivator.cyLayoutAlgorithmManager.getLayout("hierarchical");
            
-			
+			if (view==null) {
+				view = CyActivator.networkViewManager.getNetworkViews(network).iterator().next();
+			}
 			view.updateView();
             TaskIterator itr = layout.createTaskIterator(view, layout.getDefaultLayoutContext(), CyLayoutAlgorithm.ALL_NODE_VIEWS, "name");
             

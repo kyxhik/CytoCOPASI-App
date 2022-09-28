@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp;
+package org.cytoscape.CytoCopasiApp.Kegg;
 
 public enum EKeggWebProps {
     WebImportDefaultOrganism("webimport.organism"),

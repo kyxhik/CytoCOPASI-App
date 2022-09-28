@@ -16,8 +16,6 @@ import org.COPASI.ObjectStdVector;
 import org.cytoscape.CytoCopasiApp.AttributeUtil;
 import org.cytoscape.CytoCopasiApp.CyActivator;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
-import org.cytoscape.CytoCopasiApp.nodeedge.NodeDialog;
-import org.cytoscape.CytoCopasiApp.nodeedge.NodeDoubleClickTaskFactory;
 import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.model.CyNetwork;

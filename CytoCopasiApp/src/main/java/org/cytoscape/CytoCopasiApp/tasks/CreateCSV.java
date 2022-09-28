@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp;
+package org.cytoscape.CytoCopasiApp.tasks;
 
 import java.io.File;
 
@@ -9,15 +9,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+
 
 public class CreateCSV {
 	PrintWriter writer; 
 	File file;
-	public File writeDataAtOnce(String filePath, double[][] csvData, String[] columnNames, double[] timeData) throws IOException {
-		file = new File(filePath.replace("xml", "csv"));
+	public File writeDataAtOnce(String type, String filePath, Object[][] csvData, String[] columnNames, double[] timeData) throws IOException {
+		file = new File(filePath.replace(".xml", "_"+type+".csv"));
 		List<String> headerRow;
 		writer = new PrintWriter(file);
-
 			List<String[]> data = new ArrayList<>();
 			
 			headerRow = new ArrayList<String>();

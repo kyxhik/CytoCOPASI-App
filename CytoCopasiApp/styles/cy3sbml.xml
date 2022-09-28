@@ -193,7 +193,7 @@
             <visualProperty default="255" name="EDGE_TRANSPARENCY"/>
             <visualProperty default="2.0" name="EDGE_WIDTH"/>
             <visualProperty default="#000000" name="EDGE_SOURCE_ARROW_UNSELECTED_PAINT">
-                <discreteMapping attributeName="shared interaction" attributeType="string">
+                <discreteMapping attributeName="type" attributeType="string">
                     <discreteMappingEntry attributeValue="reference_eventAssignment" value="#FF6600"/>
                     <discreteMappingEntry attributeValue="reaction-product" value="#000000"/>
                     <discreteMappingEntry attributeValue="reaction-reactant" value="#000000"/>
@@ -217,7 +217,7 @@
             <visualProperty default="#FF0000" name="EDGE_STROKE_SELECTED_PAINT"/>
             <visualProperty default="255" name="EDGE_LABEL_TRANSPARENCY"/>
             <visualProperty default="#000000" name="EDGE_TARGET_ARROW_UNSELECTED_PAINT">
-                <discreteMapping attributeName="shared interaction" attributeType="string">
+                <discreteMapping attributeName="type" attributeType="string">
                     <discreteMappingEntry attributeValue="reference_eventAssignment" value="#FF6600"/>
                     <discreteMappingEntry attributeValue="reaction-product" value="#000000"/>
                     <discreteMappingEntry attributeValue="reaction-reactant" value="#000000"/>
@@ -232,7 +232,7 @@
                 </discreteMapping>
             </visualProperty>
             <visualProperty default="SOLID" name="EDGE_LINE_TYPE">
-                <discreteMapping attributeName="interaction type" attributeType="string">
+                <discreteMapping attributeName="type" attributeType="string">
                     <discreteMappingEntry attributeValue="reference_eventAssignment" value="DOT"/>
                     <discreteMappingEntry attributeValue="unit_unitDefinition" value="DOT"/>
                     <discreteMappingEntry attributeValue="sbase-deletion" value="EQUAL_DASH"/>
@@ -241,6 +241,7 @@
                     <discreteMappingEntry attributeValue="parameter_reaction" value="SEPARATE_ARROW"/>
                     <discreteMappingEntry attributeValue="sbaseRef-port" value="EQUAL_DASH"/>
                     <discreteMappingEntry attributeValue="reaction-modifier" value="LONG_DASH"/>
+ 		    <discreteMappingEntry attributeValue="reaction-inhibitor" value="EQUAL_DASH"/>
                     <discreteMappingEntry attributeValue="variable_eventAssignment" value="DOT"/>
                     <discreteMappingEntry attributeValue="sbase_unitDefinition" value="DOT"/>
                 </discreteMapping>
@@ -253,7 +254,7 @@
             <visualProperty default="#FFFF00" name="EDGE_TARGET_ARROW_SELECTED_PAINT"/>
             <visualProperty default="true" name="EDGE_VISIBLE"/>
             <visualProperty default="NONE" name="EDGE_SOURCE_ARROW_SHAPE">
-                <discreteMapping attributeName="shared interaction" attributeType="string">
+                <discreteMapping attributeName="type" attributeType="string">
                     <discreteMappingEntry attributeValue="sbase-deletion" value="DELTA_SHORT_2"/>
                     <discreteMappingEntry attributeValue="sbase-replacedBy" value="DELTA_SHORT_2"/>
                     <discreteMappingEntry attributeValue="reaction-activator" value="DIAMOND"/>
@@ -263,7 +264,7 @@
             </visualProperty>
             <visualProperty default="10" name="EDGE_LABEL_FONT_SIZE"/>
             <visualProperty default="#CCCCCC" name="EDGE_STROKE_UNSELECTED_PAINT">
-                <discreteMapping attributeName="shared interaction" attributeType="string">
+                <discreteMapping attributeName="type" attributeType="string">
                     <discreteMappingEntry attributeValue="reference_eventAssignment" value="#FF6600"/>
                     <discreteMappingEntry attributeValue="reaction-product" value="#000000"/>
                     <discreteMappingEntry attributeValue="reaction-reactant" value="#000000"/>

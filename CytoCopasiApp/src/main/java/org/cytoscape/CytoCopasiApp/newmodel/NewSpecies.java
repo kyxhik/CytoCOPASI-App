@@ -19,7 +19,6 @@ import org.COPASI.CMetab;
 import org.COPASI.CModel;
 import org.COPASI.ObjectStdVector;
 import org.cytoscape.CytoCopasiApp.CyActivator;
-import org.cytoscape.CytoCopasiApp.actions.CreateNewModelAction;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 
@@ -31,7 +30,7 @@ public class NewSpecies {
 	File myFile;
 	String myPath;
 	FileWriter f2 ;
-	public void createNewSpecies(JComboBox quantityUnitCombo, JComboBox volumeUnitCombo, JTextField compartment, CDataModel dataModel, CModel model,CyNetwork copasiNetwork, CreateNewModelAction newNetwork, CDataObject object, ObjectStdVector changedObjects) {
+	public void createNewSpecies(JComboBox quantityUnitCombo, JComboBox volumeUnitCombo, JTextField compartment, CDataModel dataModel, CModel model,CyNetwork copasiNetwork, CreateNewModel newNetwork, CDataObject object, ObjectStdVector changedObjects) {
 	JFrame speciesFrame = new JFrame("Add Metabolite");
 	JPanel speciesPanel = new JPanel();
 	speciesPanel.setPreferredSize(new Dimension(500,150));

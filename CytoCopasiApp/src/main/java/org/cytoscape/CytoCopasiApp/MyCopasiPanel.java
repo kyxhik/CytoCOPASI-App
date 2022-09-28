@@ -49,24 +49,23 @@ import org.COPASI.CReaction;
 import org.COPASI.CRootContainer;
 import org.COPASI.ObjectStdVector;
 import org.apache.commons.lang3.StringUtils;
-
+import org.cytoscape.CytoCopasiApp.Kegg.KeggWebLoadAction;
 import org.cytoscape.CytoCopasiApp.Query.ECFinder;
 import org.cytoscape.CytoCopasiApp.Query.QueryResultSplitter;
 import org.cytoscape.CytoCopasiApp.Query.SoapClient;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
-import org.cytoscape.CytoCopasiApp.actions.CreateNewModelAction;
+import org.cytoscape.CytoCopasiApp.newmodel.CreateNewModel;
 import org.cytoscape.CytoCopasiApp.actions.ImportAction;
-import org.cytoscape.CytoCopasiApp.actions.KeggWebLoadAction;
-import org.cytoscape.CytoCopasiApp.actions.Optimize;
-import org.cytoscape.CytoCopasiApp.actions.ParameterScan;
 import org.cytoscape.CytoCopasiApp.actions.SaveLayoutAction;
-import org.cytoscape.CytoCopasiApp.actions.TimeCourseSimulationTask;
 import org.cytoscape.CytoCopasiApp.newmodel.NewReaction;
+import org.cytoscape.CytoCopasiApp.newmodel.NewReactionToImportedModels;
 import org.cytoscape.CytoCopasiApp.newmodel.NewSpecies;
 import org.cytoscape.CytoCopasiApp.newmodel.ParameterOverview;
+import org.cytoscape.CytoCopasiApp.tasks.Optimize;
+import org.cytoscape.CytoCopasiApp.tasks.ParameterScan;
+import org.cytoscape.CytoCopasiApp.tasks.SteadyStateTask;
+import org.cytoscape.CytoCopasiApp.tasks.TimeCourseSimulationTask;
 import org.cytoscape.CytoCopasiApp.actions.SaveLayoutAction.SaveTask;
-import org.cytoscape.CytoCopasiApp.actions.SteadyStateTask;
-import org.cytoscape.CytoCopasiApp.tasks.CopasiFileReaderTask;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.events.SetCurrentNetworkEvent;
 import org.cytoscape.application.events.SetCurrentNetworkListener;
@@ -149,6 +148,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 	CReaction reaction;
 	CCopasiParameterGroup parameterGroup ;
 	
+	CDataModel dm;
+	CModel model;
 	DefaultTableModel newRateLawModel;
 	JTable rateLawTable;
 	
@@ -242,6 +243,20 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 		add(parameterScan);
 		validate();
 		repaint();
+		
+		JButton newSpecies = new JButton("Add Species");
+		JButton newReaction = new JButton("Add Reaction");
+		JButton resetButton = new JButton("Reset Model");
+		JButton saveModel = new JButton("Save Model");
+		JButton exportModel = new JButton("Export Model as SBML");
+		JButton removeReaction = new JButton("Remove Reaction");
+		preview = new JButton("Parameter Overview");
+		newModelBox = Box.createHorizontalBox();					
+		newModelActionBox = Box.createHorizontalBox();
+		//newModelBox = Box.createVerticalBox();
+		//add(newModel);
+		
+		
 		importModel.addActionListener(new ActionListener() {
 
 			@Override
@@ -249,11 +264,246 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				
 				ImportAction importAction = new ImportAction(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
 				importAction.actionPerformed(e);	
-				/*preview = new JButton("Parameter Overview");
-				add(preview);*/
+				newModelBox.add(newReaction);
+				newModelBox.add(removeReaction);
+				newModelBox.add(preview);
+				
+				newModelActionBox.add(saveModel);
+				newModelActionBox.add(exportModel);
+				newModelActionBox.add(resetButton);
+				
+
+				add(newModelBox);
+				add(newModelActionBox);
+				
+				String modelName;
+				dm = CRootContainer.addDatamodel();
+				try {
+					modelName = new Scanner(CyActivator.getReportFile(1)).next();
+					
+					String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
+					if (modelName.endsWith(".cps")) {
+					
+					dm.loadFromString(modelString);
+					} else if (modelName.endsWith(".xml")) {
+					dm.importSBML(modelName);
+					}
+					
+					
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				model = dm.getModel();
+				Set<CyNetwork> impNetworks = CyActivator.netMgr.getNetworkSet();
+				for(CyNetwork impNetwork: impNetworks) {
+				
+				newReaction.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						
+						
+							NewReactionToImportedModels addReaction = new NewReactionToImportedModels();
+							CreateNewModel newNetwork = new CreateNewModel();
+							changedObjects=new ObjectStdVector();
+							object = model.getInitialValueReference();
+							addReaction.addReaction(model.getQuantityUnit(), model.getTimeUnit(), impNetwork, object, changedObjects);
+						
+						
+						
+						}
+					
+				});
+				removeReaction.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+					
+						// TODO Auto-generated method stub
+						NewReactionToImportedModels newReaction = new NewReactionToImportedModels();
+						newReaction.removeReaction(impNetwork);
+					}
+					
+				});
+				saveModel.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						String modelName;
+						dm = CRootContainer.addDatamodel();
+						try {
+							modelName = new Scanner(CyActivator.getReportFile(1)).next();
+							
+							String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
+							if (modelName.endsWith(".cps")) {
+							
+							dm.loadFromString(modelString);
+							} else if (modelName.endsWith(".xml")) {
+							dm.importSBML(modelName);
+							}
+							
+							
+						} catch (Exception e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						model = dm.getModel();
+						
+						Component frame = CyActivator.cytoscapeDesktopService.getJFrame();
+						HashSet<FileChooserFilter> filters = new HashSet<>();
+						
+						FileChooserFilter filter = new FileChooserFilter(".cps", "cps");
+						filters.add(filter);
+					   // FileUtil fileUtil = fileUtil;
+					    
+					    File xmlFile = CyActivator.fileUtil.getFile(frame, "Save File", FileUtil.SAVE, filters);
+					    
+					    final SaveTask task = new SaveTask(xmlFile.getAbsolutePath());
+					    CyActivator.taskManager.execute(new TaskIterator(task));	
+				}
+					
+					class SaveTask extends AbstractTask {
+						
+						private String filePath;
+						private TaskMonitor taskMonitor;
+						
+						public SaveTask(String filePath) {
+							this.filePath = filePath;
+							super.cancelled = false;
+						}
+
+						@Override
+						public void run(TaskMonitor taskMonitor) throws Exception {
+							try {
+							//	myFile.delete();
+								myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+								
+							//	model.compileIfNecessary();
+
+							   
+							  //  model.updateInitialValues(changedObjects);
+							    taskMonitor.setTitle("Saving File");
+								taskMonitor.setProgress(0.4);
+								
+								dm.saveModel(filePath ,true);
+								
+								try {
+			    					f2 = new FileWriter(myFile, false);
+			    					f2.write(filePath);
+			    					f2.close();
+				
+			    				} catch (Exception e1) {
+			    					// TODO Auto-generated catch block
+			    					e1.printStackTrace();
+					            taskMonitor.setStatusMessage("Saved Copasi Model to " + filePath + ".cps");
+							
+							} 
+							}finally {
+								System.gc();
+							}
+						
+						}
+					}
+					
+					
+					
+				});
+				resetButton.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						
+					}
+				});
+			exportModel.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					String modelName;
+					dm = CRootContainer.addDatamodel();
+					try {
+						modelName = new Scanner(CyActivator.getReportFile(1)).next();
+						
+						String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
+						if (modelName.endsWith(".cps")) {
+						
+						dm.loadFromString(modelString);
+						} else if (modelName.endsWith(".xml")) {
+						dm.importSBML(modelName);
+						}
+						
+						
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					model = dm.getModel();
+					Component frame = CyActivator.cytoscapeDesktopService.getJFrame();
+					HashSet<FileChooserFilter> filters = new HashSet<>();
+					
+					FileChooserFilter filter = new FileChooserFilter(".xml", "xml");
+					filters.add(filter);
+				   // FileUtil fileUtil = fileUtil;
+				    
+				    File xmlFile = CyActivator.fileUtil.getFile(frame, "Save File", FileUtil.SAVE, filters);
+				    
+				    final SaveTask task = new SaveTask(xmlFile.getAbsolutePath());
+				    CyActivator.taskManager.execute(new TaskIterator(task));	
+			}
+				
+				class SaveTask extends AbstractTask {
+					
+					private String filePath;
+					private TaskMonitor taskMonitor;
+					
+					public SaveTask(String filePath) {
+						this.filePath = filePath;
+						super.cancelled = false;
+					}
+
+					@Override
+					public void run(TaskMonitor taskMonitor) throws Exception {
+						try {
+							//myFile.delete();
+							myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+							
+							model.compileIfNecessary();
+
+						   
+						   // model.updateInitialValues(changedObjects);
+						    taskMonitor.setTitle("Saving File");
+							taskMonitor.setProgress(0.4);
+							
+							//dataModel.saveModel(filePath ,true);
+							dm.exportSBML(filePath, true);
+							try {
+		    					f2 = new FileWriter(myFile, false);
+		    					f2.write(filePath);
+		    					f2.close();
+			
+		    				} catch (Exception e1) {
+		    					// TODO Auto-generated catch block
+		    					e1.printStackTrace();
+				            taskMonitor.setStatusMessage("Saved Copasi Model to " + filePath + ".xml");
+						
+						} 
+						}finally {
+							System.gc();
+						}
+					
+					}
+				}
+				
+			});
+
 			}
 			
 			
+		}
 		});
 		
 		importKegg.addActionListener(new ActionListener() {
@@ -263,6 +513,234 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				// TODO Auto-generated method stub
 				KeggWebLoadAction keggLoad = new KeggWebLoadAction();
 				keggLoad.actionPerformed(e);
+				
+				newModelBox.add(newReaction);
+				newModelBox.add(removeReaction);
+				newModelBox.add(preview);
+				
+				newModelActionBox.add(saveModel);
+				newModelActionBox.add(exportModel);
+				newModelActionBox.add(resetButton);
+				
+
+				add(newModelBox);
+				add(newModelActionBox);
+				dm = CRootContainer.addDatamodel();
+				try {
+					String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+					
+					String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
+					if (modelName.endsWith(".cps")) {
+					
+					dm.loadFromString(modelString);
+					} else if (modelName.endsWith(".xml")) {
+					dm.importSBML(modelName);
+					}
+					
+					
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				model = dm.getModel();
+				newReaction.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						
+							CyNetwork impNetwork = CyActivator.netMgr.getNetworkSet().iterator().next();
+							NewReactionToImportedModels addReaction = new NewReactionToImportedModels();
+							
+							changedObjects=new ObjectStdVector();
+							object = model.getInitialValueReference();
+							addReaction.addReaction(model.getQuantityUnit(), model.getTimeUnit(), impNetwork, object, changedObjects);
+						
+						
+						
+						}
+					
+				});
+				removeReaction.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+					
+						// TODO Auto-generated method stub
+						
+						CyNetwork impNetwork = CyActivator.netMgr.getNetworkSet().iterator().next();
+						NewReactionToImportedModels newReaction = new NewReactionToImportedModels();
+						newReaction.removeReaction(impNetwork);
+					}
+					
+				});
+				saveModel.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						String modelName;
+						dm = CRootContainer.addDatamodel();
+						try {
+							modelName = new Scanner(CyActivator.getReportFile(1)).next();
+							
+							String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
+							if (modelName.endsWith(".cps")) {
+							
+							dm.loadFromString(modelString);
+							} else if (modelName.endsWith(".xml")) {
+							dm.importSBML(modelName);
+							}
+							
+							
+						} catch (Exception e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						model = dm.getModel();
+						
+						Component frame = CyActivator.cytoscapeDesktopService.getJFrame();
+						HashSet<FileChooserFilter> filters = new HashSet<>();
+						
+						FileChooserFilter filter = new FileChooserFilter(".cps", "cps");
+						filters.add(filter);
+					   // FileUtil fileUtil = fileUtil;
+					    
+					    File xmlFile = CyActivator.fileUtil.getFile(frame, "Save File", FileUtil.SAVE, filters);
+					    
+					    final SaveTask task = new SaveTask(xmlFile.getAbsolutePath());
+					    CyActivator.taskManager.execute(new TaskIterator(task));	
+				}
+					
+					class SaveTask extends AbstractTask {
+						
+						private String filePath;
+						private TaskMonitor taskMonitor;
+						
+						public SaveTask(String filePath) {
+							this.filePath = filePath;
+							super.cancelled = false;
+						}
+
+						@Override
+						public void run(TaskMonitor taskMonitor) throws Exception {
+							try {
+							//	myFile.delete();
+								myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+								
+								model.compileIfNecessary();
+
+							   
+							    model.updateInitialValues(changedObjects);
+							    taskMonitor.setTitle("Saving File");
+								taskMonitor.setProgress(0.4);
+								
+								dm.saveModel(filePath ,true);
+								
+								try {
+			    					f2 = new FileWriter(myFile, false);
+			    					f2.write(filePath);
+			    					f2.close();
+				
+			    				} catch (Exception e1) {
+			    					// TODO Auto-generated catch block
+			    					e1.printStackTrace();
+					            taskMonitor.setStatusMessage("Saved Copasi Model to " + filePath + ".cps");
+							
+							} 
+							}finally {
+								System.gc();
+							}
+						
+						}
+					}
+					
+					
+					
+				});
+			exportModel.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					String modelName;
+					dm = CRootContainer.addDatamodel();
+					try {
+						modelName = new Scanner(CyActivator.getReportFile(1)).next();
+						
+						String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
+						if (modelName.endsWith(".cps")) {
+						
+						dm.loadFromString(modelString);
+						} else if (modelName.endsWith(".xml")) {
+						dm.importSBML(modelName);
+						}
+						
+						
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					model = dm.getModel();
+					Component frame = CyActivator.cytoscapeDesktopService.getJFrame();
+					HashSet<FileChooserFilter> filters = new HashSet<>();
+					
+					FileChooserFilter filter = new FileChooserFilter(".xml", "xml");
+					filters.add(filter);
+				   // FileUtil fileUtil = fileUtil;
+				    
+				    File xmlFile = CyActivator.fileUtil.getFile(frame, "Save File", FileUtil.SAVE, filters);
+				    
+				    final SaveTask task = new SaveTask(xmlFile.getAbsolutePath());
+				    CyActivator.taskManager.execute(new TaskIterator(task));	
+			}
+				
+				class SaveTask extends AbstractTask {
+					
+					private String filePath;
+					private TaskMonitor taskMonitor;
+					
+					public SaveTask(String filePath) {
+						this.filePath = filePath;
+						super.cancelled = false;
+					}
+
+					@Override
+					public void run(TaskMonitor taskMonitor) throws Exception {
+						try {
+							//myFile.delete();
+							myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+							
+							model.compileIfNecessary();
+
+						   
+						    model.updateInitialValues(changedObjects);
+						    taskMonitor.setTitle("Saving File");
+							taskMonitor.setProgress(0.4);
+							
+							//dataModel.saveModel(filePath ,true);
+							dm.exportSBML(filePath, true);
+							try {
+		    					f2 = new FileWriter(myFile, false);
+		    					f2.write(filePath);
+		    					f2.close();
+			
+		    				} catch (Exception e1) {
+		    					// TODO Auto-generated catch block
+		    					e1.printStackTrace();
+				            taskMonitor.setStatusMessage("Saved Copasi Model to " + filePath + ".xml");
+						
+						} 
+						}finally {
+							System.gc();
+						}
+					
+					}
+				}
+				
+			});
+
+			
 			}
 			
 		});
@@ -336,18 +814,18 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					if (newModelBox!=null) {
 						remove(newModelBox);
 						remove(newModelActionBox);
-						remove(newModelPanelLabel);
+						
 					}
 					overview = new ParameterOverview();
 
-					CreateNewModelAction newNetwork = new CreateNewModelAction();
+					CreateNewModel newNetwork = new CreateNewModel();
 					copasiNetwork = newNetwork.createNetwork();
 					newNetwork.applyVisStyle();
 					model.setTimeUnit(timeUnitCombo.getSelectedItem().toString());
 					model.setVolumeUnit(volumeUnitCombo.getSelectedItem().toString());
 					model.setQuantityUnit(quantityUnitCombo.getSelectedItem().toString());
 				    changedObjects=new ObjectStdVector();
-				    CCompartment myCompartment = model.createCompartment(compartment.getText(), Double.parseDouble(volume.getText()));
+				    CCompartment myCompartment = model.createCompartment(compartment.getText(), Double.parseDouble(volume.getText()));				    
 				    object = myCompartment.getInitialValueReference();
 				    changedObjects.add(object);
 				    newModelPanelLabel = new JLabel("New COPASI Model");
@@ -646,7 +1124,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				SteadyStateTask steadyStateTask = new SteadyStateTask(cySwingApplication, fileUtil);
+				SteadyStateTask steadyStateTask = new SteadyStateTask(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
 				steadyStateTask.actionPerformed(e);
 			}
 			

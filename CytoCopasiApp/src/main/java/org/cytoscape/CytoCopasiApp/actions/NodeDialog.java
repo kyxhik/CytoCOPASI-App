@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.nodeedge;
+package org.cytoscape.CytoCopasiApp.actions;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -21,6 +21,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -29,6 +30,7 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Scanner;
+import java.util.StringJoiner;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -69,6 +71,9 @@ import org.COPASI.CEvaluationTreeVector;
 import org.COPASI.CEvaluationTreeVectorN;
 import org.COPASI.CFunction;
 import org.COPASI.CFunctionDB;
+import org.COPASI.CFunctionParameter;
+import org.COPASI.CFunctionParameters;
+import org.COPASI.CFunctionStdVector;
 import org.COPASI.CFunctionVectorN;
 import org.COPASI.CMetab;
 import org.COPASI.CModel;
@@ -79,10 +84,12 @@ import org.COPASI.CRootContainer;
 import org.COPASI.ObjectStdVector;
 import org.apache.commons.lang3.StringUtils;
 import org.cytoscape.CytoCopasiApp.AttributeUtil;
-import org.cytoscape.CytoCopasiApp.CopasiTree;
 import org.cytoscape.CytoCopasiApp.CyActivator;
+import org.cytoscape.CytoCopasiApp.Query.Brenda;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
-import org.cytoscape.CytoCopasiApp.actions.Optimize;
+import org.cytoscape.CytoCopasiApp.newmodel.NewRateLaw;
+import org.cytoscape.CytoCopasiApp.tasks.CopasiTree;
+import org.cytoscape.CytoCopasiApp.tasks.Optimize;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.model.CyIdentifiable;
 import org.cytoscape.model.CyNetwork;
@@ -107,27 +114,48 @@ public class NodeDialog extends JDialog {
 	private CySwingApplication cySwingApplication;
 	private FileUtil fileUtil;
 	private ObjectStdVector changedObjects;
-	private String[] parameterSplit;
+	 String[] parameterSplit;
 	static JFrame frame = new JFrame("Specifics");
 	private String compartment;
 	private Double initConc;
+	JLabel rateLawFormulaLabel;
+	JComboBox rateLawCombo; 
+	CFunctionDB functionDB;
+	JScrollPane sp;
+	JLabel formulaPanelLabel;
+	String rateLaw;
+	String rateLawFormula;
+	DefaultTableModel editRateLawModel;
+	JTable rateLawTable;
+	String[] substrateSplit;
+	String[] productSplit;
+	String[] modifierSplit;
+	int numOfNewPrmtrs;
+	StringJoiner parJoiner;
+	String[] newParameters;
+	String myPath;
+	File myFile;
+	FileWriter f2;
+	 JLabel[] paramLabels; 
+	    JTextField[] paramVals;
+	    Box brendaValuesBox;
 	public NodeDialog(CyNetwork network, CyNode node) {
 	    this(frame, network, node);
 	  }
 	
 	 public NodeDialog(Window owner, final CyNetwork network, final CyNode node) {
-		 super(owner, network.getRow((CyIdentifiable)node).isSet("canonicalName") ? ("Reactant " + (String)network.getRow((CyIdentifiable)node).get("canonicalName", String.class)) : "New reactant", Dialog.ModalityType.APPLICATION_MODAL);
+		 super(owner, network.getRow((CyIdentifiable)node).isSet("canonicalName") ? ("" + (String)network.getRow((CyIdentifiable)node).get("canonicalName", String.class)) : "", Dialog.ModalityType.APPLICATION_MODAL);
 		    String name;
 		    setSize(new Dimension (400,600));
 		    this.wasNewlyCreated = false;
 		    this.nameField = null;
 		    CyRow nodeAttributesRow = network.getRow((CyIdentifiable)node);
-		    
+		    CDataModel dm = CRootContainer.addDatamodel();
 		    changedObjects = new ObjectStdVector();
 		    String modelName;
 			try {
 				modelName = new Scanner(CyActivator.getReportFile(1)).next();
-				CDataModel dm = CRootContainer.addDatamodel();
+				
 				Image image = null;
 		        URL url = null;
 		        URL url2 = null;
@@ -138,13 +166,15 @@ public class NodeDialog extends JDialog {
 			    } else if (modelName.endsWith(".xml")) {
 			      dm.importSBML(modelName);
 			    }
+				
+				
 				CModel model = dm.getModel();
 				
 				Object type = nodeAttributesRow.get("type", Object.class);
 			    Object typeSbml = nodeAttributesRow.get("sbml type", Object.class);
 			
 			    if (type == "species" || typeSbml == "species") {
-		    	setTitle("Edit species");
+		    	setTitle("Edit metabolite");
 			    } else if (type == "reaction rev" || type == "reaction irrev" || typeSbml == "reaction") {
 		    	setTitle("Edit reaction");
 			    }
@@ -178,10 +208,10 @@ public class NodeDialog extends JDialog {
 		    	Box compartmentBox = Box.createHorizontalBox();
 		    	JLabel compartmentLabel = new JLabel("Compartment:");
 		    	
-		    	if (modelName.endsWith(".cps")) {
+		    	if (modelName.endsWith(".cps")==true) {
 		    	compartment = nodeAttributesRow.get("compartment", String.class);
 		    	initConc = nodeAttributesRow.get("initial concentration", Double.class);
-		    	} else if (modelName.endsWith(".xml")) {
+		    	} else if (modelName.endsWith(".xml")==true) {
 		    	compartment = nodeAttributesRow.get("compartment", String.class);
 		    	initConc = nodeAttributesRow.get("sbml initial concentration", Double.class);
 		    	}
@@ -196,7 +226,7 @@ public class NodeDialog extends JDialog {
 		    	
 		    	Box keggEntryBox = Box.createHorizontalBox();
 		    	JLabel keggEntryLabel = new JLabel("Kegg Entry: ");
-		    	if (compartment.equals("unknown") == true) {
+		    	if (compartment.equals("kegg compartment") == true) {
 		        
 		        try {
 		           url = new URL("https://rest.kegg.jp/get/"+name+"/image");
@@ -327,25 +357,47 @@ public class NodeDialog extends JDialog {
 								model.updateInitialValues(changedObjects);
 								model.compileIfNecessary();
 								
-								
-								
-								
-								if (modelName.endsWith(".cps")) {
-									dm.saveModel(modelName, true);
-								} else if (modelName.contains(".xml")) {
-								
-								
+								myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+								String osName = System.getProperty("os.name");
+								if (osName.equals("Windows")) {
+									if (modelName.contains(".cps")==true) {
+									myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.cps";
+									} else {
+										myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.xml";
+
+									}
+									} else {
+										if (modelName.contains(".cps")==true) {
+											myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.cps";
+											} else {
+												myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.xml";
+
+											}
+								}
+		
+							
 								try {
-									
-									dm.exportSBML(modelName, true);
+									f2 = new FileWriter(myFile, false);
+									f2.write(myPath);
+									f2.close();
+
 								} catch (Exception e1) {
 									// TODO Auto-generated catch block
 									e1.printStackTrace();
 								}
-								
+								model.updateInitialValues(changedObjects);
+								model.compile();
+								if (myPath.contains(".cps")==true) {
+								dm.saveModel(myPath,true);
+								} else {
+									try {
+										dm.exportSBML(myPath, true);
+									} catch (Exception e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
 								}
-								
-								
+			
 
 							}
 						}
@@ -369,6 +421,7 @@ public class NodeDialog extends JDialog {
 		    	add(buttonBox);
 		    } else if (type == "reaction rev" || type == "reaction irrev" || typeSbml == "reaction rev" || typeSbml == "reaction irrev") {
 		    	//Reversible
+		    	numOfNewPrmtrs = 0;
 		    	setSize(new Dimension (1225,350));
 		    	Box reversibleBox = Box.createHorizontalBox();
 		    	JLabel reverLabel = new JLabel ("Reversible: ");
@@ -397,474 +450,331 @@ public class NodeDialog extends JDialog {
 		    	add(chemEqBox);
 		    	
 		    	// RateLaw
-		    	
-		    	Box rateLawBox = Box.createHorizontalBox();
-		    	JLabel rateLawLabel = new JLabel("Rate Law: ");
-		    	JTextField formulaMainField = new JTextField(5);
-		    	CFunctionDB functionDB = CRootContainer.getFunctionList();
-		    	CFunctionVectorN allFunctions = functionDB.loadedFunctions();
-		    	String [] functionList = new String[(int) allFunctions.size()];
-		    	JTextField functionName = new JTextField(3);
-				JTextArea formula = new JTextArea(5,1);
-				String substrateData = nodeAttributesRow.get("substrates", String.class);
+		    	String substrateData = nodeAttributesRow.get("substrates", String.class);
 				String productData = nodeAttributesRow.get("products", String.class);
 				String modifierData = nodeAttributesRow.get("modifiers", String.class);
 				String units = nodeAttributesRow.get("substrate units", String.class);
 				String parameters = nodeAttributesRow.get("parameters", String.class);
 				
-				String[] substrateSplit = substrateData.split(", ");
-				String[] productSplit = productData.split(", ");
-				String[] modifierSplit = modifierData.split(", ");
-				String[] parameterSplit = parameters.split(", ");
-
-		    	for (int a=0; a< allFunctions.size(); a++) {
-		    		functionList[a] = allFunctions.get(a).getObjectName();
-		    		
-		    	}
-		    	JComboBox rateLawCombo = new JComboBox(functionList);
-		    	String rateLaw = nodeAttributesRow.get("Rate Law", String.class);
-		    	String rateLawFormula = nodeAttributesRow.get("Rate Law Formula", String.class);
-		    	rateLawCombo.setSelectedItem(rateLaw);
-		    	
-		    	
-		    	
-		    	JButton newRateLaw = new JButton("+");
-		    	newRateLaw.addActionListener((ActionListener) new ActionListener() {
-
-					@SuppressWarnings("deprecation")
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						// TODO Auto-generated method stub
-						JFrame newRateLawFrame = new JFrame("Add a new rate law");
-						JPanel newRateLawPanel = new JPanel();
-						newRateLawPanel.setPreferredSize(new Dimension(1000,750));
-						newRateLawPanel.setLayout(new GridLayout(5,2));
-						Box functionNameBox = Box.createHorizontalBox();
-						JLabel functionNameLabel = new JLabel("Function: ");
-						JTextField functionName = new JTextField(3);
-						functionNameBox.add(functionNameLabel);
-						functionNameBox.add(functionName);
-						
-						Box formulaBox = Box.createHorizontalBox();
-						JLabel formulaLabel = new JLabel("Formula: ");
-						JTextArea formula = new JTextArea(5,1);
-						JButton formulaItem = new JButton("->");
-						JButton commitButton = new JButton("commit");
-						formulaItem.addActionListener( (ActionListener) new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent e) {
-								// TODO Auto-generated method stub
-								JPanel formulaItemPanel = new JPanel();
-								formulaItemPanel.setPreferredSize(new Dimension(500,500));
-								CopasiTree optimItems = new CopasiTree();
-								DefaultMutableTreeNode optim = new DefaultMutableTreeNode("Parameter Items");
-								String [] optCat =  {"Reactions", "Species"};
-								try {
-									optimItems.createNodes(optim, optCat);
-								} catch (Exception e1) {
-									// TODO Auto-generated catch block
-									e1.printStackTrace();
-								}
-								
-								formulaTree = new JTree(optim);
-							
-								JButton plus = new JButton("+");
-							       plus.addActionListener( new ActionListener() {
-							    	   public void actionPerformed(ActionEvent e) {
-							    		   formula.append("+");
-							    		   
-							    	   }
-							       }
-				  
-							    		   );
-							       formulaItemPanel.add(plus);
-
-							      JButton minus = new JButton("-");
-							        minus.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("-");
-								    		 
-								    	   }
-								       }
-								    		   );
-							        formulaItemPanel.add(minus);
-					  
-							        JButton times = new JButton("*");
-							        times.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("*");
-								    		 
-								    	   }
-								       }
-								    		   
-								    		   );
-							        formulaItemPanel.add(times);
-
-							        JButton divide = new JButton("/");
-							        divide.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("/");
-								    	   }
-								       }
-								    		   
-								    		   );
-							        formulaItemPanel.add(divide);
-							        
-							        JButton power = new JButton("^");
-							        power.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("^");
-								    	   }
-								       }   
-								    		   );
-							        
-							        formulaItemPanel.add(power);
-							        
-							        JButton parantheses1 = new JButton("(");
-							        parantheses1.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("/");
-								    	   }
-								       }   
-								    		   );
-							        
-							        formulaItemPanel.add(parantheses1);
-							        
-							        JButton parantheses2 = new JButton("(");
-							        parantheses2.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("/");
-								    	   }
-								       }   
-								    		   );
-							        
-							        formulaItemPanel.add(parantheses2);
-							        
-							    formulaTree.addTreeSelectionListener(new TreeSelectionListener() {
-									@SuppressWarnings("null")
-									public void valueChanged(TreeSelectionEvent e) {
-										DefaultMutableTreeNode node = (DefaultMutableTreeNode) formulaTree.getLastSelectedPathComponent();
-									
-										if (node == null)
-											return;
-							
-											Object objNew = e.getNewLeadSelectionPath().getLastPathComponent();
-											formula.append(objNew.toString());
-											
-									
-									}
-								}
-										
-										);
-								JScrollPane treeView = new JScrollPane(formulaTree);
-								treeView.setPreferredSize(new Dimension(100,300));
-								formulaItemPanel.add(treeView);
-								Object[] paroptions= {"OK","Cancel"};
-								int parameterSelection = JOptionPane.showOptionDialog(null, formulaItemPanel, "Select Parameter",JOptionPane.PLAIN_MESSAGE, 1, null, paroptions, paroptions[0]);
-							}
-							
-							
-							
-						});
-						
-						
-						formulaBox.add(formulaLabel);
-						formulaBox.add(formula);
-						formulaBox.add(formulaItem);
-						formulaBox.add(commitButton);
-						
-						
-						
-						Box functionTypeBox = Box.createHorizontalBox();
-						JLabel functionTypeLabel = new JLabel("Function Type");
-						JRadioButton revButton = new JRadioButton("reversible");
-						JRadioButton irrevButton = new JRadioButton("irreversible");
-						
-						functionTypeBox.add(functionTypeLabel);
-						functionTypeBox.add(revButton);
-						functionTypeBox.add(irrevButton);
-						
-						newRateLawPanel.add(functionNameBox);
-						newRateLawPanel.add(formulaBox);
-						newRateLawPanel.add(functionTypeBox);
-						
-						newRateLawFrame.add(newRateLawPanel);
-						newRateLawFrame.setSize(new Dimension(1000,750));
-						
-						Object[] rateLawAddOptions = {"Add", "Cancel"};
-						int rateLawAddDialog = JOptionPane.showOptionDialog(owner, newRateLawPanel, "Add a new rate law", JOptionPane.PLAIN_MESSAGE, 1, null, rateLawAddOptions, rateLawAddOptions[0]);
-						
-						if (rateLawAddDialog == 0) {
-							rateLawCombo.addItem(functionName.getText());
-							rateLawCombo.setSelectedItem(functionName.getText());
-							formulaMainField.setText(formula.getText());
-							//CFunction newFunction = new CFunction(functionName.getText());
-							CEvaluationTree newFunction = functionDB.createFunction(functionName.getText(), CEvaluationTree.UserDefined);
-							newFunction.setInfix(formula.getText());
-							
-						}
-					}
-		    		
-		    	});
-		    	
-				functionName.setText(rateLaw);
-				
-				formula.setText(rateLawFormula);
-
-				rateLawCombo.addItemListener((ItemListener) new ItemListener() {
-
-					@Override
-					public void itemStateChanged(ItemEvent e) {
-						// TODO Auto-generated method stub
-						
-						if (e.getStateChange() == ItemEvent.SELECTED) {
-							if (functionName.getText() == rateLaw) {
-						functionName.setText(e.getItem().toString());
-						String newFunctionEdit = functionName.getText();
-					        CEvaluationTree findFunc = functionDB.findFunction(newFunctionEdit);
-					    //   if (formula.getText() == rateLawFormula) {
-							formula.setText(findFunc.getInfix());
-							} 
-					      // }
-
-						
-					}
-					}
-
-					
-				});
-				
-		    	JButton editRateLaw = new JButton("edit");
-		    	editRateLaw.addActionListener((ActionListener) new ActionListener() {
-
-					@SuppressWarnings("deprecation")
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						// TODO Auto-generated method stub
-						JFrame editRateLawFrame = new JFrame("Edit rate law");
-						JPanel editRateLawPanel = new JPanel();
-						functionName.setText(rateLawCombo.getSelectedItem().toString());
-						String newFunctionEdit = functionName.getText();
-					        CEvaluationTree findFunc = functionDB.findFunction(newFunctionEdit);
-					    //   if (formula.getText() == rateLawFormula) {
-							formula.setText(findFunc.getInfix());
-						editRateLawPanel.setPreferredSize(new Dimension(1000,750));
-						editRateLawPanel.setLayout(new GridLayout(5,2));
-						Box functionNameBox = Box.createHorizontalBox();
-						JLabel functionNameLabel = new JLabel("Function: ");
-						
-						functionNameBox.add(functionNameLabel);
-						functionNameBox.add(functionName);
-						
-						
-						
-						Box formulaBox = Box.createHorizontalBox();
-						JLabel formulaLabel = new JLabel("Formula: ");
-						
-						JButton formulaItem = new JButton("->");
-						formulaBox.add(formulaLabel);
-						formulaBox.add(formula);
-						formulaBox.add(formulaItem);
-						
-						
-						
-						String description[] = {"Name", "Type", "Units"};
-						
-						String type[] = {"Substrate", "Product", "Modifier", "Parameter"};
-						DefaultTableModel editRateLawModel = new DefaultTableModel();
-						JTable rateLawTable = new JTable();
-						rateLawTable.setModel(editRateLawModel);
-						editRateLawModel.addColumn(description[0]);
-						editRateLawModel.addColumn(description[1]);
-						editRateLawModel.addColumn(description[2]);
-						
-						JComboBox typeCombo = new JComboBox(type);
-
-						
-						
-						for (int i=0; i<substrateSplit.length; i++) {
-							typeCombo.setSelectedIndex(0);
-							editRateLawModel.addRow(new Object[] {substrateSplit[i], typeCombo.getSelectedItem(), units});
-						}
-						
-						for (int i=0; i<productSplit.length; i++) {
-							typeCombo.setSelectedIndex(1);
-							editRateLawModel.addRow(new Object[] {productSplit[i], typeCombo.getSelectedItem(), units});
-						}
-						
-						if (modifierSplit.length>0 && modifierSplit[0]!="") {
-						for (int i=0; i<modifierSplit.length; i++) {
-							typeCombo.setSelectedIndex(2);
-							editRateLawModel.addRow(new Object[] {modifierSplit[i], typeCombo.getSelectedItem(), units});
-						}
-						
-						}
-						
-						for (int i = 0 ; i<parameterSplit.length; i++) {
-							Double paramVal= nodeAttributesRow.get(parameterSplit[i], Double.class);
-							typeCombo.setSelectedIndex(3);
-							editRateLawModel.addRow(new Object[] {parameterSplit[i], typeCombo.getSelectedItem(), paramVal});
-						}
-						
-						rateLawTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(typeCombo));
-						JScrollPane sp = new JScrollPane(rateLawTable);
-
-						editRateLawPanel.add(functionNameBox);
-						editRateLawPanel.add(formulaBox);
-						editRateLawPanel.add(sp);
-						formulaItem.addActionListener( (ActionListener) new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent e) {
-								// TODO Auto-generated method stub
-								JPanel formulaItemPanel = new JPanel();
-								formulaItemPanel.setPreferredSize(new Dimension(500,500));
-								CopasiTree optimItems = new CopasiTree();
-								DefaultMutableTreeNode optim = new DefaultMutableTreeNode("Parameter Items");
-								String [] optCat =  {"Reactions", "Species"};
-								try {
-									optimItems.createNodes(optim, optCat);
-								} catch (Exception e1) {
-									// TODO Auto-generated catch block
-									e1.printStackTrace();
-								}
-								
-								formulaTree = new JTree(optim);
-							
-								JButton plus = new JButton("+");
-							       plus.addActionListener( new ActionListener() {
-							    	   public void actionPerformed(ActionEvent e) {
-							    		   formula.append("+");
-							    		   
-							    	   }
-							       }
-				  
-							    		   );
-							       formulaItemPanel.add(plus);
-
-							      JButton minus = new JButton("-");
-							        minus.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("-");
-								    		 
-								    	   }
-								       }
-								    		   );
-							        formulaItemPanel.add(minus);
-					  
-							        JButton times = new JButton("*");
-							        times.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("*");
-								    		 
-								    	   }
-								       }
-								    		   
-								    		   );
-							        formulaItemPanel.add(times);
-
-							        JButton divide = new JButton("/");
-							        divide.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("/");
-								    	   }
-								       }
-								    		   
-								    		   );
-							        formulaItemPanel.add(divide);
-							        
-							        JButton power = new JButton("^");
-							        power.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("^");
-								    	   }
-								       }   
-								    		   );
-							        
-							        formulaItemPanel.add(power);
-							        
-							        JButton parantheses1 = new JButton("(");
-							        parantheses1.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("/");
-								    	   }
-								       }   
-								    		   );
-							        
-							        formulaItemPanel.add(parantheses1);
-							        
-							        JButton parantheses2 = new JButton("(");
-							        parantheses2.addActionListener(new ActionListener() {
-								    	   public void actionPerformed(ActionEvent e) {
-								    		   formula.append("/");
-								    	   }
-								       }   
-								    		   );
-							        
-							        formulaItemPanel.add(parantheses2);
-							    
-							    
-							    formulaTree.addTreeSelectionListener(new TreeSelectionListener() {
-									@SuppressWarnings("null")
-									public void valueChanged(TreeSelectionEvent e) {
-										DefaultMutableTreeNode node = (DefaultMutableTreeNode) formulaTree.getLastSelectedPathComponent();
-									
-										if (node == null)
-											return;
-							
-											Object objNew = e.getNewLeadSelectionPath().getLastPathComponent();
-											formula.append(objNew.toString());
-											
-									}
-								}
-										
-										);
-								JScrollPane treeView = new JScrollPane(formulaTree);
-								treeView.setPreferredSize(new Dimension(100,300));
-								formulaItemPanel.add(treeView);
-								
-								Object[] paroptions= {"OK","Cancel"};
-								int parameterSelection = JOptionPane.showOptionDialog(null, formulaItemPanel, "Select Parameter",JOptionPane.PLAIN_MESSAGE, 1, null, paroptions, paroptions[0]);
-							}
-							
-							
-							
-						});
-						
-						
-					
-
-						editRateLawFrame.add(editRateLawPanel);
-						editRateLawFrame.setSize(new Dimension(1000,750));
-						
-						Object[] rateLawAddOptions = {"Apply", "Cancel"};
-						int rateLawEditDialog = JOptionPane.showOptionDialog(owner, editRateLawPanel, "Edit rate law", JOptionPane.PLAIN_MESSAGE, 1, null, rateLawAddOptions, rateLawAddOptions[0]);
-						
-						if (rateLawEditDialog == 0) {
-							for (int i = 0 ; i<parameterSplit.length; i++) {
-							
-							nodeAttributesRow.set(parameterSplit[i], Double.parseDouble(rateLawTable.getValueAt(editRateLawModel.getRowCount()-parameterSplit.length+i, 2).toString()));
-						}
-						}
-					
-					}
-		    		
-		    	});
+				substrateSplit = substrateData.split(", ");
+				productSplit = productData.split(", ");
+				modifierSplit = modifierData.split(", ");
+				parameterSplit = parameters.split(", ");
+				rateLaw = nodeAttributesRow.get("Rate Law", String.class);
+		    	rateLawFormula = nodeAttributesRow.get("Rate Law Formula", String.class);
+		    	Box rateLawBox = Box.createHorizontalBox();
+		    	JLabel rateLawLabel = new JLabel("Rate Law: ");
+		    	JLabel rateLawNameLabel = new JLabel(rateLaw);
+		    	JButton rateLawFormulaButton = new JButton("Show");
+		    	JButton rateLawChangeButton = new JButton("Change");
+		    	Box overallRateLaw = Box.createVerticalBox();
+		    	rateLawFormulaLabel = new JLabel(rateLawFormula);
 		    	rateLawBox.add(rateLawLabel);
-		    	rateLawBox.add(rateLawCombo);
-		    	rateLawBox.add(editRateLaw);
-		    	rateLawBox.add(newRateLaw);
-		    	add(rateLawBox);
-		    	
+		    	rateLawBox.add(rateLawNameLabel);
+		    	rateLawBox.add(rateLawFormulaButton);
+		    	rateLawBox.add(rateLawChangeButton);
+		    	overallRateLaw.add(rateLawBox);
+		    //	rateLawBox.add(rateLawCombo);
+		    //	rateLawBox.add(editRateLaw);
+		    //	rateLawBox.add(newRateLaw);
+		    	add(overallRateLaw);
+		    	validate();
+		    	repaint();
+		    	rateLawFormulaButton.addActionListener(new ActionListener() {
 
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						if (rateLawFormulaLabel!=null) {
+							overallRateLaw.remove(rateLawFormulaLabel);
+						}
+						 
+						JOptionPane.showMessageDialog(overallRateLaw,rateLawFormulaLabel);
+						 validate();
+					     repaint();
+					}
+		    		
+		    	});
+		    	String description[] = {"Name", "Type", "Units"};
+				
+				String metabtype[] = {"Substrate", "Product", "Modifier", "Parameter"};
+				editRateLawModel = new DefaultTableModel();
+				rateLawTable = new JTable();
+				rateLawTable.setModel(editRateLawModel);
+				editRateLawModel.addColumn(description[0]);
+				editRateLawModel.addColumn(description[1]);
+				editRateLawModel.addColumn(description[2]);
+				
+				JComboBox typeCombo = new JComboBox(metabtype);
+
+				
+				
+				for (int i=0; i<substrateSplit.length; i++) {
+					typeCombo.setSelectedIndex(0);
+					editRateLawModel.addRow(new Object[] {substrateSplit[i], typeCombo.getSelectedItem(), units});
+				}
+				
+				for (int i=0; i<productSplit.length; i++) {
+					typeCombo.setSelectedIndex(1);
+					editRateLawModel.addRow(new Object[] {productSplit[i], typeCombo.getSelectedItem(), units});
+				}
+				
+				if (modifierSplit.length>0 && modifierSplit[0]!="") {
+				for (int i=0; i<modifierSplit.length; i++) {
+					typeCombo.setSelectedIndex(2);
+					editRateLawModel.addRow(new Object[] {modifierSplit[i], typeCombo.getSelectedItem(), units});
+				}
+				
+				}
+				
+				for (int i = 0 ; i<parameterSplit.length; i++) {
+					Double paramVal= nodeAttributesRow.get(parameterSplit[i], Double.class);
+					typeCombo.setSelectedIndex(3);
+					editRateLawModel.addRow(new Object[] {parameterSplit[i], typeCombo.getSelectedItem(), paramVal});
+				}
+				
+				rateLawTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(typeCombo));
+				 sp = new JScrollPane(rateLawTable);
+		    	rateLawChangeButton.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						JFrame newRateLawFrame = new JFrame("Rate law");
+						JPanel newRateLawPanel = new JPanel();
+						CFunctionStdVector suitableFunctions;
+						newRateLawPanel.setPreferredSize(new Dimension(1000,500));
+						newRateLawPanel.setLayout(new GridLayout(5,2));
+						 functionDB = CRootContainer.getFunctionList();
+						if (chemEq.contains("=")==true) {
+						suitableFunctions = functionDB.suitableFunctions(substrateSplit.length, productSplit.length, COPASI.TriTrue);
+						} else {
+							suitableFunctions = functionDB.suitableFunctions(substrateSplit.length, productSplit.length, COPASI.TriFalse);
+
+						}
+						String [] functionList = new String[(int) suitableFunctions.size()];
+						for (int a=0; a< suitableFunctions.size(); a++) {
+				    		functionList[a] = suitableFunctions.get(a).getObjectName();
+				    		
+				    	}
+				    	 rateLawCombo = new JComboBox(functionList);
+				    	rateLawCombo.setSelectedItem(rateLaw);
+				    	String formulaInPanel = functionDB.findFunction(rateLaw).getInfix();
+				    	formulaPanelLabel = new JLabel(formulaInPanel);
+				    	JButton addRateLawButton = new JButton("Add");
+				    	Box rateLawsBox = Box.createHorizontalBox();
+				    	rateLawsBox.add(rateLawCombo);
+				    	rateLawsBox.add(addRateLawButton);
+				    	newRateLawPanel.add(rateLawsBox);
+				    	
+				    	addRateLawButton.addActionListener(new ActionListener() {
+
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								// TODO Auto-generated method stub
+								
+								NewRateLaw newRateLaw = new NewRateLaw();
+								newRateLaw.addRateLaw(functionDB, rateLawCombo);
+								
+							}
+				    		
+				    	});
+				    	//paramLabels = new JLabel[(int) parameterSplit.length];
+					  //   paramVals = new JTextField[(int) parameterSplit.length];
+					     
+				    	
+				    	
+						JButton brendaButton = new JButton("Ask Brenda");
+						 newRateLawPanel.add(formulaPanelLabel);
+						 Box parameterValuesBox = Box.createVerticalBox();
+						 parameterValuesBox.add(sp);
+						 parameterValuesBox.add(brendaButton);
+							newRateLawPanel.add(parameterValuesBox);
+							
+						brendaButton.addActionListener(new ActionListener() {
+
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								// TODO Auto-generated method stub
+								 int count = 0;
+								if (brendaValuesBox!=null) {
+									newRateLawPanel.remove(brendaValuesBox);
+								}
+								brendaValuesBox = Box.createHorizontalBox();
+								if(newParameters!=null) {
+									
+									System.out.println("new parameters accepted");
+									paramLabels = new JLabel[(int) newParameters.length];
+								     paramVals = new JTextField[(int) newParameters.length];
+								    
+								     for (int i = 0; i< newParameters.length; i++) {
+								    	 if (paramLabels[i]!=null) {
+								    		 brendaValuesBox.remove(paramLabels[i]);
+								    		 brendaValuesBox.remove(paramVals[i]);
+								    	 }
+								    	 paramLabels[i]=new JLabel(newParameters[i]);
+								    	 paramVals[i]= new JTextField(2);
+								    	 
+								    	 if (newParameters[i].equals("Km")==true||newParameters[i].equals("Ki")==true||newParameters[i].equals("KmKcat")==true){
+								    		 brendaValuesBox.add(paramLabels[i]);
+									    	 brendaValuesBox.add(paramVals[i]);
+									    	 count = count+1;
+								    	 }
+								    	
+								    	 
+								     }
+								     if (count==0) {
+							    		 brendaValuesBox.add(new JLabel("Nothing to ask Brenda"));
+							    	 }
+								     newRateLawPanel.add(brendaValuesBox);
+								    	
+							    	 newRateLawPanel.validate();
+							    	 newRateLawPanel.repaint();
+								     System.out.println("parameter length for brenda:"+paramLabels.length);
+								     Brenda brenda = new Brenda();
+								 
+									 brenda.brendaConnect(newRateLawPanel, paramLabels, paramVals);
+								     } else {
+								    	 
+								    	 System.out.println("new parameters not recognized");
+								    	 paramLabels = new JLabel[(int) parameterSplit.length];
+									     paramVals = new JTextField[(int) parameterSplit.length];
+								    	 for (int i = 0; i< parameterSplit.length; i++) {
+								    		 if (paramLabels[i]!=null) {
+									    		 brendaValuesBox.remove(paramLabels[i]);
+									    		 brendaValuesBox.remove(paramVals[i]);
+									    	 }
+									    	 paramLabels[i]=new JLabel(parameterSplit[i]);
+									    	 paramVals[i]= new JTextField(2);
+									    	 if (parameterSplit[i].equals("Km")==true||parameterSplit[i].equals("Ki")==true||parameterSplit[i].equals("KmKcat")==true){
+									    		 brendaValuesBox.add(paramLabels[i]);
+										    	 brendaValuesBox.add(paramVals[i]);
+										    	 count = count+1;
+									    	 }
+									    	 
+									    	 
+									    	
+									     }
+								    	 if (count==0) {
+								    		 brendaValuesBox.add(new JLabel("Nothing to ask Brenda"));
+								    	 }
+								    	 newRateLawPanel.add(brendaValuesBox);
+								    	 newRateLawPanel.validate();
+								    	 newRateLawPanel.repaint();
+								    	 Brenda brenda = new Brenda();
+										 brenda.brendaConnect(newRateLawPanel, paramLabels, paramVals);
+								     }
+								
+								
+							}
+							
+							
+						});
+							
+						rateLawCombo.addItemListener((ItemListener) new ItemListener() {
+							
+							@Override
+							public void itemStateChanged(ItemEvent e) {
+								// TODO Auto-generated method stub
+								
+								if (e.getStateChange() == ItemEvent.SELECTED) {
+									
+									int numRows = rateLawTable.getRowCount();
+									System.out.println("number of rows:"+numRows);
+									for (int i = numRows-1; i> 0; i--) {
+										if (rateLawTable.getModel().getValueAt(i, 1).equals("Parameter")==true) {
+											System.out.println("removing:"+editRateLawModel.getValueAt(i, 0));
+											editRateLawModel.removeRow(i);
+										}
+									}
+									String modifiedRateLaw = e.getItem().toString();
+									
+							        CEvaluationTree findFunc = functionDB.findFunction(modifiedRateLaw);
+							   
+							        formulaPanelLabel.setText(findFunc.getInfix());
+									CFunctionParameters variables = ((CFunction)findFunc).getVariables();
+									
+									String type[] = {"Variable", "Substrate", "Product", "Modifier", "Parameter"};
+									
+									//typeCombo.setSelectedItem(type[0]);
+									 parJoiner = new StringJoiner(", ");
+									// newParameters = new String[(int) (variables.size()-substrateSplit.length-productSplit.length-modifierSplit.length)];
+									for (int i =0; i< variables.size() ; i++) {
+										String newPrmtrName = variables.getParameter(i).getObjectName();
+										if (substrateData.contains(newPrmtrName)==false && productData.contains(newPrmtrName)==false && modifierData.contains(newPrmtrName)==false) {
+											typeCombo.setSelectedItem(type[4]);
+											parJoiner.add(newPrmtrName);
+										editRateLawModel.addRow(new Object[] {variables.getParameter(i).getObjectName(), typeCombo.getSelectedItem(), variables.getParameter(i).getDblValue()});
+										}
+									}
+									
+									newParameters = parJoiner.toString().split(", ");
+									
+									
+									
+									
+									
+									rateLawTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(typeCombo));
+									
+									newRateLawPanel.validate();
+									newRateLawPanel.repaint();
+							      // }
+
+								
+							}
+							}
+
+							
+						});
+						
+				    	Object[] rateLawAddOptions = {"Apply", "Cancel"};
+						int rateLawAddDialog = JOptionPane.showOptionDialog(owner, newRateLawPanel, "Change Rate Law", JOptionPane.PLAIN_MESSAGE, 1, null, rateLawAddOptions, rateLawAddOptions[0]);
+						if (rateLawAddDialog == 0) {
+							String changedFormulaName = rateLawCombo.getSelectedItem().toString();
+							rateLaw = changedFormulaName;
+							rateLawFormula = formulaPanelLabel.getText();
+							rateLawNameLabel.setText(changedFormulaName);
+							rateLawFormulaLabel.setText(formulaPanelLabel.getText());
+							
+							
+							
+						}
+					}
+		    		
+		    	});
+		    	
+		    	
+		    	
+				
 		    	
 		    	apply.addActionListener((ActionListener) new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
+						CReaction reaction = model.getReaction(nodeAttributesRow.get("name", String.class));
 						
-						String finalFormula = rateLawCombo.getSelectedItem().toString();
+						reaction.setFunction(rateLaw);
+						reaction.getFunction().setInfix(rateLawFormula);
+						for (int i=0; i< parameterSplit.length; i++) {
+							network.getDefaultNodeTable().deleteColumn(parameterSplit[i]);
+							reaction.getParameters().removeParameter(parameterSplit[i]);
+						}
+						
+						newParameters = parJoiner.toString().split(", ");
+						for (int i=0; i<newParameters.length; i++) {
+							System.out.println("newParamters:"+newParameters[i]);
+							System.out.println("rows:"+editRateLawModel.getRowCount());
+
+							System.out.println("subs:"+substrateSplit.length);
+							System.out.println("pros:"+productSplit.length);
+
+							System.out.println("reaction"+reaction.getObjectName());
+							int rowIndex = editRateLawModel.getRowCount()-substrateSplit.length-productSplit.length+i+1;
+							System.out.println("row index:"+rowIndex);
+							
+							AttributeUtil.set(network, node, newParameters[i],Double.parseDouble(editRateLawModel.getValueAt(rowIndex, 2).toString()) , Double.class);
+						}
+						String finalFormula = rateLawNameLabel.getText();
 						nodeAttributesRow.set("reversible", revCheckBox.isSelected());
 						
 						Boolean isRev = revCheckBox.isSelected();
@@ -883,20 +793,18 @@ public class NodeDialog extends JDialog {
 							}
 						}
 						
-						
+						nodeAttributesRow.set("parameters", parJoiner.toString());
 						nodeAttributesRow.set("Chemical Equation", chemEqField.getText());
 						nodeAttributesRow.set("Rate Law", finalFormula);
 						nodeAttributesRow.set("Rate Law Formula", functionDB.findFunction(finalFormula).getInfix());
-					
-							CReaction reaction = model.getReaction(nodeAttributesRow.get("name", String.class));
 							
-							//reaction.setReversible(revCheckBox.isSelected());
+							reaction.setReversible(revCheckBox.isSelected());
 							
-							long numPar = reaction.getParameters().size();
 							
-							for (int j = 0 ; j< numPar; j++) {
-								if (reaction.getParameters().getParameter(j).getObjectName().equals(parameterSplit[j]));
-								reaction.getParameters().getParameter(j).setDblValue(nodeAttributesRow.get(parameterSplit[j], Double.class));
+							for (int j = 0 ; j< newParameters.length; j++) {
+								if (reaction.getParameters().getParameter(j).getObjectName().equals(newParameters[j])==true);
+								
+								reaction.getParameters().getParameter(j).setDblValue(nodeAttributesRow.get(newParameters[j], Double.class));
 								reaction.getParameters().getParameter(j).isEditable();
 								changedObjects.add(reaction.getParameters().getParameter(j).getValueReference());
 								model.compileIfNecessary();
@@ -904,18 +812,51 @@ public class NodeDialog extends JDialog {
 								
 								//ParsingReportGenerator.getInstance().appendLine("new parameter value: " + reaction.getParameters().getParameter(j).getObjectName() + ":" +  reaction.getParameters().getParameter(j).getDblValue());
 							}
-							model.updateInitialValues(changedObjects);
 							
-						if (modelName.contains(".cps")) {
-							dm.saveModel(modelName, true);
-						}else if (modelName.contains(".xml")) {
+							myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+							String osName = System.getProperty("os.name");
+							if (osName.equals("Windows")) {
+								if (modelName.contains(".cps")==true) {
+								myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.cps";
+								} else {
+									myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.xml";
+
+								}
+								} else {
+									if (modelName.contains(".cps")==true) {
+										myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.cps";
+										} else {
+											myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.xml";
+
+										}
+							}
+	
+						
 							try {
-								dm.exportSBML(modelName, true);
+								f2 = new FileWriter(myFile, false);
+								f2.write(myPath);
+								f2.close();
+
 							} catch (Exception e1) {
 								// TODO Auto-generated catch block
 								e1.printStackTrace();
 							}
-						}
+							model.updateInitialValues(changedObjects);
+							model.compile();
+							if (myPath.contains(".cps")==true) {
+							dm.saveModel(myPath,true);
+							} else {
+								try {
+									dm.exportSBML(myPath, true);
+								} catch (Exception e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+							}
+		
+							
+							
+
 						
 						dispose();
 						

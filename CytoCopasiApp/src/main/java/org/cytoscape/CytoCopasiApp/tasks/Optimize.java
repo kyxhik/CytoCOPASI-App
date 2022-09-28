@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.actions;
+package org.cytoscape.CytoCopasiApp.tasks;
 
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -784,11 +784,11 @@ public class Optimize extends AbstractCyAction{
 				if (expression.contains("Flux")) {
 					ParsingReportGenerator.getInstance().appendLine("Will be converted to flux CN");
 					for (int a = 0; a<model.getNumReactions(); a++) {
-						if (expression.contains(model.getReaction(a).getFluxReference().getObjectDisplayName())) {
+						if (expression.contains(model.getReaction(a).getFluxReference().getObjectDisplayName())==true) {
 						newExpression = model.getReaction(a).getFluxReference().getCN().getString();
 						return newExpression;
 						
-						} else if (expression.contains(model.getReaction(a).getParticleFluxReference().getObjectDisplayName())) {
+						} else if (expression.contains(model.getReaction(a).getParticleFluxReference().getObjectDisplayName())==true) {
 						newExpression = model.getReaction(a).getParticleFluxReference().getCN().getString();
 						return newExpression;
 						} 
@@ -802,6 +802,7 @@ public class Optimize extends AbstractCyAction{
 							newExpression = model.getMetabolite(a).getConcentrationReference().getCN().getString();
 							return newExpression;
 							//
+						
 						}
 					}
 				} else

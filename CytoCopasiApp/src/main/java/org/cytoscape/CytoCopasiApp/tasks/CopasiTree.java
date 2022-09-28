@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp;
+package org.cytoscape.CytoCopasiApp.tasks;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import org.COPASI.CDataModel;
 import org.COPASI.CModel;
 import org.COPASI.CRootContainer;
+import org.cytoscape.CytoCopasiApp.CyActivator;
 
 public class CopasiTree {
 	public void createNodes(DefaultMutableTreeNode item, String[] categoryNames) throws Exception {

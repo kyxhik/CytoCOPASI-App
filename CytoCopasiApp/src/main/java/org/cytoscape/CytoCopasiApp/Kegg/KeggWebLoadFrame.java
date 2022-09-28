@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp;
+package org.cytoscape.CytoCopasiApp.Kegg;
 
 
 import org.COPASI.CChemEq;
@@ -14,13 +14,12 @@ import org.COPASI.CModel;
 import org.COPASI.CReaction;
 import org.COPASI.CRootContainer;
 import org.apache.commons.lang3.StringUtils;
+import org.cytoscape.CytoCopasiApp.AttributeUtil;
 import org.cytoscape.CytoCopasiApp.CyActivator;
-import org.cytoscape.CytoCopasiApp.EKeggWebProps;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
-import org.cytoscape.CytoCopasiApp.actions.CreateNewModelAction;
+import org.cytoscape.CytoCopasiApp.newmodel.CreateNewModel;
+import org.cytoscape.CytoCopasiApp.actions.CopasiFileReaderTask;
 import org.cytoscape.CytoCopasiApp.actions.ImportAction;
-import org.cytoscape.CytoCopasiApp.actions.KeggWebLoadAction;
-import org.cytoscape.CytoCopasiApp.tasks.CopasiFileReaderTask;
 import org.cytoscape.event.CyEventHelper;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyNetwork;
@@ -89,6 +88,9 @@ public class KeggWebLoadFrame extends JFrame {
     CyNode[] reactionNode;
     CyNode[] speciesNode;
     private static KeggWebLoadFrame keggWebLoadFrame = null;
+    File myFile;
+	FileWriter f2;
+	String myPath;
 
     public static KeggWebLoadFrame getInstance() throws Exception {
         if (keggWebLoadFrame == null)
@@ -625,7 +627,7 @@ public class KeggWebLoadFrame extends JFrame {
 			try {
 				dm.importSBML(sbmlFile.getAbsolutePath());
 				
-				CreateNewModelAction keggModel = new CreateNewModelAction();
+				CreateNewModel keggModel = new CreateNewModel();
 				keggNetwork = keggModel.createNetwork();
 				CyNetworkView keggView = CyActivator.networkViewManager.getNetworkViewSet().iterator().next();
 				keggModel.applySbmlVisStyle();
@@ -642,7 +644,8 @@ public class KeggWebLoadFrame extends JFrame {
 					String metabName = keggMetab.getObjectDisplayName();
 					String longName = StringUtils.substringAfter(metabName, ":");
 					String shortName = StringUtils.substringBefore(metabName, ":");
-					speciesNode[i] = keggModel.createSpeciesNodeForSBML(keggNetwork, shortName, "species", keggMetab.getKey(), object.getCN().getString(), longName, "unknown", 1.0, "Reactions");
+					keggMetab.setObjectName(shortName);
+					speciesNode[i] = keggModel.createSpeciesNodeForSBML(keggNetwork, shortName, "species", keggMetab.getKey(), object.getCN().getString(), longName, "kegg compartment", 1.0, "Reactions");
 							
 				}
 				
@@ -719,9 +722,9 @@ public class KeggWebLoadFrame extends JFrame {
 		            }
 		            String subPar =  joiner4.toString();
 					if (keggReaction.isReversible()==true) {
-					reactionNode[i] = keggModel.createReactionsNodeForSBML(keggNetwork, keggReaction.getObjectDisplayName(), "reaction rev", keggReaction.getKey(), keggReaction.getCN().getString(), keggReaction.getObjectName(), true, keggReaction.getReactionScheme(), defaultFunction.getObjectName(), defaultFunction.getInfix(), subStr, "unknown", subPro, "unknown", subMod, "unknown", subPar, keggParNames, keggParValues);
+					reactionNode[i] = keggModel.createReactionsNodeForSBML(keggNetwork,StringUtils.substringBetween(keggReaction.getObjectDisplayName(), "(", ")"), "reaction rev", keggReaction.getKey(), keggReaction.getCN().getString(), keggReaction.getObjectName(), true, keggReaction.getReactionScheme(), defaultFunction.getObjectName(), defaultFunction.getInfix(), subStr, "unknown", subPro, "unknown", subMod, "unknown", subPar, keggParNames, keggParValues);
 					} else {
-					reactionNode[i] = keggModel.createReactionsNodeForSBML(keggNetwork, keggReaction.getObjectDisplayName(), "reaction irrev", keggReaction.getKey(), keggReaction.getCN().getString(), keggReaction.getObjectName(), false, keggReaction.getReactionScheme(), defaultFunction.getObjectName(), defaultFunction.getInfix(), subStr, "unknown", subPro, "unknown", subMod, "unknown", subPar, keggParNames, keggParValues);
+					reactionNode[i] = keggModel.createReactionsNodeForSBML(keggNetwork, StringUtils.substringBetween(keggReaction.getObjectDisplayName(), "(", ")"), "reaction irrev", keggReaction.getKey(), keggReaction.getCN().getString(), keggReaction.getObjectName(), false, keggReaction.getReactionScheme(), defaultFunction.getObjectName(), defaultFunction.getInfix(), subStr, "unknown", subPro, "unknown", subMod, "unknown", subPar, keggParNames, keggParValues);
 
 					}
 					
@@ -736,9 +739,35 @@ public class KeggWebLoadFrame extends JFrame {
 
 						}
 					}
+					CyActivator.netMgr.addNetwork(keggNetwork);
 					keggView.updateView();
 					}
+				myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+				String osName = System.getProperty("os.name");
+				String modelName = sbmlFile.getAbsolutePath();
 				
+
+				//File tempFile = new File(myPath);
+				
+					try {
+						dm.exportSBML(modelName);
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				
+				try {
+					f2 = new FileWriter(myFile, false);
+					f2.write(modelName);
+					f2.close();
+
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+
+		
 				
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block

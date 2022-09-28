@@ -77,10 +77,6 @@ public class ImportAction extends AbstractCyAction {
 		this.loadNetworkFileTaskFactory = loadNetworkFileTaskFactory;
 		this.synchronousTaskManager = synchronousTaskManager;
 		
-		
-
-		
-		
     }
 
    

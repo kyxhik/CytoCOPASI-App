@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.nodeedge;
+package org.cytoscape.CytoCopasiApp.actions;
 import javax.swing.SwingUtilities;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;

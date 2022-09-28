@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp.actions;
+package org.cytoscape.CytoCopasiApp.tasks;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -53,13 +53,12 @@ import org.w3c.dom.Document;
 import org.COPASI.*;
 import org.cytoscape.CytoCopasiApp.AttributeUtil;
 import org.cytoscape.CytoCopasiApp.CopasiSaveDialog;
-import org.cytoscape.CytoCopasiApp.CreateCSV;
 import org.cytoscape.CytoCopasiApp.CyActivator;
 import org.cytoscape.CytoCopasiApp.GetPlot;
 import org.cytoscape.CytoCopasiApp.Dynamic.SBMLSimulator;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
-import org.cytoscape.CytoCopasiApp.tasks.CopasiFileReaderTask;
-import org.cytoscape.CytoCopasiApp.tasks.CopasiReaderTaskFactory;
+import org.cytoscape.CytoCopasiApp.actions.CopasiFileReaderTask;
+import org.cytoscape.CytoCopasiApp.actions.CopasiReaderTaskFactory;
 import org.jfree.chart.*;
 
 
@@ -83,7 +82,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 	private String[] s;
 	private boolean sbmlSimBool;
 	double[][] concdata;
-	double[][] csvdata;
+	Object[][] csvdata;
 	double[] timedata;
 	String[] csvColumns ;
 	private TimeCourseSimulationTask.TimeCourseTask parentTask;
@@ -399,7 +398,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 			}
 	
 			concdata = new double[lastIndex][metabindexes.length];
-			csvdata = new double[lastIndex][iMax];
+			csvdata = new Object[lastIndex][iMax];
 			timedata = new double[lastIndex];
 			CreateCSV writeToCsv = new CreateCSV();
 			for (int a = 0; a< lastIndex; a++) {
@@ -419,7 +418,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 			
 			
 			if (sbmlSim == true) {
-				File csvFile = writeToCsv.writeDataAtOnce(modelName, csvdata, csvColumns, timedata);
+				File csvFile = writeToCsv.writeDataAtOnce("Time",modelName, csvdata, csvColumns, timedata);
 				SBMLSimulator simulator = new SBMLSimulator();
 				simulator.TimeCourseDynamicSim(new File(modelName), simval[0], simval[2], csvFile, taskMonitor);
 				taskMonitor.setStatusMessage("Opening SBMLsimulator");

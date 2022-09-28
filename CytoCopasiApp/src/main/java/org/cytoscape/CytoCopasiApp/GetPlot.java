@@ -1,8 +1,10 @@
 package org.cytoscape.CytoCopasiApp;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Font;
 import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -15,9 +17,19 @@ import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
+import org.jfree.chart.labels.StandardXYItemLabelGenerator;
+import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.labels.XYItemLabelGenerator;
+import org.jfree.chart.labels.XYSeriesLabelGenerator;
+import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.category.CategoryItemRenderer;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
@@ -30,22 +42,32 @@ public class GetPlot {
     private final XYSeries series = new XYSeries("Copasi Plot");
     private final XYDataset bigseries = new XYSeriesCollection(series);
     String title;
-
+    XYTextAnnotation annotation ;
 	
     public void create(String title, Object[] myspecies, double[] time, double[][] concdata, String timeUnit, String concUnit) {
     	
     	JFrame f = new JFrame(title);
     	//f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.add(progressBar, BorderLayout.NORTH);
-        JFreeChart chart = ChartFactory.createXYLineChart(title, "time (" + timeUnit+ ")", "concentration ("+concUnit+"/l)", getDataset(myspecies, time, concdata), PlotOrientation.VERTICAL,true, false, false);
+        JFreeChart chart = ChartFactory.createXYLineChart(title, "time (" + timeUnit+ ")", "concentration ("+concUnit+"/l)", getDataset(myspecies, time, concdata), PlotOrientation.VERTICAL,true, true, false);
         XYPlot plot = chart.getXYPlot();
+       
+       
         plot.setBackgroundPaint(Color.WHITE);
         
-      //  XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
-        //renderer.setSeriesPaint(0, Color.RED);
-        //renderer.setSeriesPaint(1, Color.BLUE);
-       // renderer.setSeriesPaint(2, Color.GREEN);
-        //renderer.setSeriesPaint(3, Color.ORANGE);
+       XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+       XYItemRenderer renderer1 = plot.getRenderer(); 
+        renderer1.setSeriesPaint(0, Color.BLACK);
+        renderer1.setSeriesPaint(1, Color.BLACK);
+        renderer1.setSeriesPaint(2, Color.BLACK);
+        renderer1.setSeriesPaint(3, Color.BLACK);
+        renderer1.setDefaultStroke(new BasicStroke(1.0f));   
+        for (int b=0; b<myspecies.length;b++) {
+        annotation = new XYTextAnnotation("["+myspecies[b].toString()+"]", 50, concdata[(time.length/2)-1][b]);
+        annotation.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        plot.addAnnotation(annotation);
+        }
+        plot.setRenderer(0, renderer1);
        // renderer.setSeriesPaint(4, Color.MAGENTA);
        
         f.add(new ChartPanel(chart) {
@@ -78,11 +100,13 @@ public class GetPlot {
 				
 				series.add(time[a], concdata[a][b]);
 			
-			
+				
 			
 			
 			
 		}
+			
+			
 			bigseries.addSeries(series); 
 		}
 		

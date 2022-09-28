@@ -1,4 +1,4 @@
-package org.cytoscape.CytoCopasiApp;
+package org.cytoscape.CytoCopasiApp.Kegg;
 
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.CytoCopasiApp.CyActivator;

@@ -67,10 +67,10 @@ import org.COPASI.ObjectStdVector;
 import org.apache.commons.lang3.StringUtils;
 import org.cytoscape.CytoCopasiApp.AttributeUtil;
 import org.cytoscape.CytoCopasiApp.CyActivator;
+import org.cytoscape.CytoCopasiApp.Query.Brenda;
 import org.cytoscape.CytoCopasiApp.Query.ECFinder;
 import org.cytoscape.CytoCopasiApp.Query.QueryResultSplitter;
 import org.cytoscape.CytoCopasiApp.Query.SoapClient;
-import org.cytoscape.CytoCopasiApp.actions.CreateNewModelAction;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
@@ -129,7 +129,7 @@ public class NewReaction {
 	CMetab newMetab;
 	File myFile;
 	FileWriter f2;
-	public void createNewReaction(CDataModel dataModel, CModel model, JTextField compartment, JComboBox quantityUnitCombo, JComboBox timeUnitCombo, CyNetwork copasiNetwork, CreateNewModelAction newNetwork, CDataObject object, ObjectStdVector changedObjects) {
+	public void createNewReaction(CDataModel dataModel, CModel model, JTextField compartment, JComboBox quantityUnitCombo, JComboBox timeUnitCombo, CyNetwork copasiNetwork, CreateNewModel newNetwork, CDataObject object, ObjectStdVector changedObjects) {
 		
 		
 			
@@ -226,117 +226,8 @@ public class NewReaction {
 
 						@Override
 						public void actionPerformed(ActionEvent e) {
-							// TODO Auto-generated method stub
-							JFrame newRateLawFrame = new JFrame("Add a new rate law");
-							JPanel newRateLawPanel = new JPanel();
-							newRateLawPanel.setPreferredSize(new Dimension(1000,750));
-							newRateLawPanel.setLayout(new GridLayout(5,2));
-							Box functionNameBox = Box.createHorizontalBox();
-							JLabel functionNameLabel = new JLabel("Function: ");
-							JTextField functionName = new JTextField(3);
-							functionNameBox.add(functionNameLabel);
-							functionNameBox.add(functionName);
-							
-							Box formulaBox = Box.createHorizontalBox();
-							JLabel formulaLabel = new JLabel("Formula: ");
-							JTextArea formula = new JTextArea(5,1);
-							JButton commitButton = new JButton("commit");
-							
-							
-							formulaBox.add(formulaLabel);
-							formulaBox.add(formula);
-							formulaBox.add(commitButton);
-							
-							newRateLawPanel.add(functionNameBox);
-							newRateLawPanel.add(formulaBox);
-							newRateLawPanel.validate();
-							newRateLawPanel.repaint();
-							
-							
-							commitButton.addActionListener(new ActionListener() {
-
-								@Override
-								public void actionPerformed(ActionEvent e) {
-									// TODO Auto-generated method stub
-									//CFunction newFunction = new CFunction(functionName.getText());
-									//functionDB.add(newFunction, true);
-									if (functionDB.findFunction(functionName.getText())!=null) {
-										functionDB.removeFunction(functionName.getText());
-									}
-									CEvaluationTree newFunction = functionDB.createFunction(functionName.getText(), CEvaluationTree.UserDefined);
-									newFormula = formula.getText();
-									newFunction.setInfix(newFormula);
-									//newFunction.setReversible(COPASI.TriUnspecified);
-									
-									variables = ((CFunction) newFunction).getVariables();
-									System.out.println("number of parameters: " + variables.size());
-									System.out.println("rate law: " + newFunction.getInfix());
-									
-									//set function parameters and values here. When you click on add, the values will be added to changed objects and become a part of your model
-									String description[] = {"Name", "Type", "Units"};
-									String type[] = {"Variable", "Substrate", "Product", "Modifier", "Parameter"};
-									newRateLawModel = new DefaultTableModel();
-									rateLawTable = new JTable();
-									rateLawTable.setModel(newRateLawModel);
-									
-									newRateLawModel.addColumn(description[0]);
-									newRateLawModel.addColumn(description[1]);
-									newRateLawModel.addColumn(description[2]);
-									typeCombo = new JComboBox(type);
-									typeCombo.setSelectedItem(type[0]);
-									
-									for (int i =0; i< variables.size() ; i++) {
-										
-										newRateLawModel.addRow(new Object[] {variables.getParameter(i).getObjectName(), typeCombo.getSelectedItem(), variables.getParameter(i).getUnits()});
-										
-									}
-									
-									if (sp3!=null) {
-										newRateLawPanel.remove(sp3);
-										newRateLawPanel.validate();
-										newRateLawPanel.repaint();
-										
-										sp3 = null;
-									}
-									
-									
-									
-									rateLawTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(typeCombo));
-									sp3 = new JScrollPane(rateLawTable);
-									newRateLawPanel.add(sp3);
-									newRateLawPanel.validate();
-									newRateLawPanel.repaint();
-								}
-								
-							});
-							
-							
-							newRateLawFrame.add(newRateLawPanel);
-							Object[] rateLawAddOptions = {"Add", "Cancel"};
-							
-							int rateLawAddDialog = JOptionPane.showOptionDialog(newRateLawFrame, newRateLawPanel, "Add a new rate law", JOptionPane.PLAIN_MESSAGE, 1, null, rateLawAddOptions, rateLawAddOptions[0]);
-							
-							if (rateLawAddDialog == 0) {
-								rateLawCombo.addItem(functionName.getText());
-								rateLawCombo.setSelectedItem(functionName.getText());
-								
-								for (int i=0;i< variables.size(); i++) {
-									String paramType = (String) newRateLawModel.getValueAt(i,1);
-									if (paramType == "Substrate") {
-										variables.getParameter(i).setUsage(CFunctionParameter.Role_SUBSTRATE);
-										System.out.println("substrate when set:"+variables.getParameter(i).getObjectName());
-									}else if (paramType == "Product") {
-										variables.getParameter(i).setUsage(CFunctionParameter.Role_PRODUCT);
-										System.out.println("product when set:"+variables.getParameter(i).getObjectName());
-									}else if (paramType == "Modifier") {
-										variables.getParameter(i).setUsage(CFunctionParameter.Role_MODIFIER);
-										System.out.println("modifier when set:"+variables.getParameter(i).getObjectName());
-									}else if (paramType == "Parameter") {
-										variables.getParameter(i).setUsage(CFunctionParameter.Role_PARAMETER);										
-									}
-									
-								}
-							}
+							NewRateLaw newRateLaw = new NewRateLaw();
+							newRateLaw.addRateLaw(functionDB,rateLawCombo);
 						}
 			    		
 			    	});
@@ -395,297 +286,8 @@ public class NewReaction {
 								public void actionPerformed(ActionEvent e) {
 									// TODO Auto-generated method stub
 									
-									JFrame loginFrame = new JFrame("Login");
-									Object[] loginOptions = {"OK"};
-									loginFrame.setPreferredSize(new Dimension(350,250));
-								
-									Box loginBox = Box.createVerticalBox();
-									loginBox.setPreferredSize(new Dimension(280,100));
-									JLabel emailLabel = new JLabel("email");
-									JTextField emailField = new JTextField(7);
-									JLabel passwordLabel = new JLabel("password");
-									JPasswordField passwordField = new JPasswordField(7);
-									
-									loginBox.add(emailLabel);
-									loginBox.add(emailField);
-									loginBox.add(passwordLabel);
-									loginBox.add(passwordField);
-									
-									//loginPanel.add(loginBox);
-									loginFrame.add(loginBox);
-									
-									JOptionPane loginPane = new JOptionPane(loginBox, JOptionPane.QUESTION_MESSAGE, 0, null, loginOptions, loginOptions[0]);
-									JDialog logDialog = new JDialog(loginFrame, "Please Enter Your Email and Password", true);
-									
-									logDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-									logDialog.setContentPane(loginPane);
-									
-									loginPane.addPropertyChangeListener(new PropertyChangeListener() {
-										
-										@Override
-										public void propertyChange(PropertyChangeEvent evt) {
-											// TODO Auto-generated method stub
-											if (JOptionPane.VALUE_PROPERTY.equals(evt.getPropertyName())) {
-												
-												loginFrame.add(new JLabel("Logging in...this may take a while..."));
-												SoapClient query = new SoapClient();
-												String myEmail = emailField.getText();
-												String myPassword = String.valueOf(passwordField.getPassword());
-						
-												if (loginPane.getValue().equals(loginOptions[0])) {
-													loginPane.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
-													String myOrganisms = query.getOrganismNames(myEmail, myPassword);
-													System.out.println("myOrganisms:" + myOrganisms);
-													if (myOrganisms==null) {
-														
-														JOptionPane.showMessageDialog(loginFrame, "Username or password is wrong, or account was not activated.\n"
-																+ "");
-														loginPane.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
-														loginPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
-													}else {
-														loginPane.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
-														logDialog.dispose();
-														String[] organismList = myOrganisms.split("!");
-														JComboBox organismCombo = new JComboBox();
-														for (int i = 0; i<organismList.length; i++) {
-															organismCombo.addItem(organismList[i]);
-														}
-														
-														JFrame queryFrame = new JFrame("Brenda Query");
-														JPanel queryPanel = new JPanel();
-														queryFrame.setPreferredSize(new Dimension(550,250));
-														queryPanel.setPreferredSize(new Dimension(550,250));
-														queryPanel.setLayout(new GridLayout(5,2));
-														
-														
-														JLabel enzymeNameLabel = new JLabel("Enzyme");
-														JTextField enzymeField = new JTextField(7);
-														JLabel organismLabel = new JLabel("Select Organism");
-														JLabel queryTypeLabel = new JLabel("Value");
-														String[] queryTypeOptions = {"Km", "KmKcat", "Ki"};
-														JComboBox queryTypeCombo = new JComboBox(queryTypeOptions);
-														
-														
-														Box queryBox = Box.createVerticalBox();
-														
-														queryPanel.add(enzymeNameLabel);
-														queryPanel.add(enzymeField);
-														queryPanel.add(organismLabel);
-														queryPanel.add(organismCombo);
-														queryPanel.add(queryTypeLabel);
-														queryPanel.add(queryTypeCombo);
-														queryPanel.validate();
-														queryPanel.repaint();
-														queryFrame.add(queryPanel);
-														Object[] queryOptions = {"Find"};
-														
-														JOptionPane queryPane = new JOptionPane(queryPanel, JOptionPane.QUESTION_MESSAGE, 0, null, queryOptions, queryOptions[0]);
-														JDialog queryDial = new JDialog(queryFrame, "Welcome to Brenda", true);
-														
-														queryDial.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-														queryDial.setContentPane(queryPane);
-														
-														queryPane.addPropertyChangeListener(new PropertyChangeListener() {
-														
-															@Override
-															public void propertyChange(PropertyChangeEvent evt2) {
-																
-																// TODO Auto-generated method stub
-																if (JOptionPane.VALUE_PROPERTY.equals(evt2.getPropertyName())) {
-																	queryPane.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
-
-																	String enzymeName = enzymeField.getText();
-																	ecNoModel = new DefaultTableModel();
-																	String ecTableColumns[] = {"EC Number", "Recommended Name", "Synonyms"};
-																	ecNoModel.addColumn(ecTableColumns[0]);
-																	ecNoModel.addColumn(ecTableColumns[1]);
-																	ecNoModel.addColumn(ecTableColumns[2]);
-																	JXTable ecTable = new JXTable(ecNoModel);
-																	ECFinder ecFinder = new ECFinder();	
-														            String[][] ecData = ecFinder.getECFromHTML(enzymeName);
-														            
-														            if (queryPane.getValue().equals(queryOptions[0])) {
-														            if (ecData==null) {
-																		queryPane.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
-
-														            	JOptionPane.showMessageDialog(queryFrame, "Enzyme not found, try again.");
-														            	queryPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
-														            } else {
-																		queryPane.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
-
-														            	queryDial.dispose();
-														            	
-														            	@SuppressWarnings({ "serial", "rawtypes" })
-														            	
-																		LinkAction ecAction = new LinkAction<Object>(null) {
-																			public void actionPerformed(ActionEvent e) {
-																		       
-																				JFrame queryResultsFrame = new JFrame("Brenda SOAP Query");
-																				QueryResultSplitter split = new QueryResultSplitter();
-																				
-																				String eventText = e.getSource().toString();
-																				System.out.println(eventText);
-																				String myEC = StringUtils.substringBetween(eventText, "text=", ",defaultCapable");
-																				System.out.println(myEC);
-																					for (int i = 0; i<ecData[0].length; i++) {
-																						if (myEC.equals(ecData[0][i])==true) {
-																						
-																						System.out.println(ecData[0][i]);
-																							try {
-																								String resultString = query.getValue(myEmail, myPassword, ecData[0][i], organismCombo.getSelectedItem().toString(), queryTypeCombo.getSelectedItem().toString());
-																								//System.out.println("query items: "+ myEmail+ myPassword+ ecData[0][i]+ organismCombo.getSelectedItem().toString()+ queryTypeCombo.getSelectedItem().toString());
-																								System.out.println("result string:" + resultString);
-																								
-																								if (resultString.equals("")){
-																									JOptionPane.showMessageDialog(queryFrame, "No enzyme data found for the organism " + organismCombo.getSelectedItem().toString());
-																								}
-																								String[] rows = split.splitResults(resultString);
-																								resultColumns = split.splitColumnNames(rows[0]);
-																								results = new Object[rows.length][resultColumns.length];
-																								//String[] resultsTemp = new String[rows.length];
-																								for (int j=0; j<rows.length; j++) {
-																									String[] resultsTemp = split.splitData(rows[j]);
-																									
-																									for(int k=0; k< resultsTemp.length; k++) {
-																										System.out.println("result temp:" + resultsTemp[k]);
-																										results[j][k] = resultsTemp[k];
-																									}
-																								}
-																								
-																								JXTable jt = new JXTable(results, resultColumns);
-																								
-																								JScrollPane sp2 = new JScrollPane(jt);
-																								sp2.setPreferredSize(new Dimension(1500,450));
-																								JPanel brendaResultsPanel = new JPanel();
-																								brendaResultsPanel.setPreferredSize(new Dimension(1600,600));
-																								brendaResultsPanel.add(sp2);
-																								Object[] brResOptions = {"Select", "Cancel"};
-																								
-																								LinkAction ec2Action = new LinkAction<Object>(null) {
-
-																									
-																									public void actionPerformed(ActionEvent e) {
-																										String referenceNo =  (String) jt.getValueAt(jt.getSelectedRow(), 7);
-																										System.out.println("referenceNo:" + referenceNo);
-
-																										String referenceSt = query.getPubmedLink(myEmail, myPassword, referenceNo);
-																										String pubmedNo = StringUtils.substringBetween(referenceSt, "pubmedId*", "#");
-																										System.out.println("pubmedNo:" + pubmedNo);
-																										String pubmedURL = "https://pubmed.ncbi.nlm.nih.gov/"+pubmedNo+"/";
-																										URI pubmedURI = URI.create(pubmedURL);
-																										try {
-																											Desktop.getDesktop().browse(pubmedURI);
-																										} catch (IOException e1) {
-																											// TODO Auto-generated catch block
-																											e1.printStackTrace();
-																										}
-																									}
-																									
-																								};
-																								TableCellRenderer ecRenderer2 = new DefaultTableRenderer(
-																										
-																										new HyperlinkProvider(ec2Action));
-																								jt.getColumnExt(7).setEditable(false);
-																								jt.getColumnExt(7).setCellRenderer(ecRenderer2);
-																								int queryDialog = JOptionPane.showOptionDialog(null, brendaResultsPanel, "Brenda Results: "+myEC, JOptionPane.PLAIN_MESSAGE, 1, null, brResOptions, brResOptions[0]);
-
-																								if (queryDialog == 0) {
-																									String selectedBrenda = (String) jt.getValueAt(jt.getSelectedRow(), 1);
-																									System.out.println(selectedBrenda);
-																									for (int h = 0 ; h< paramLabels.length; h++) {
-																										
-																										System.out.println("Query Combo:"+queryTypeCombo.getSelectedItem().toString());
-																										System.out.println(paramLabels[h].getName());
-																										if (queryTypeCombo.getSelectedItem().toString().equals(paramLabels[h].getName())) {
-																											paramVals[h].setText(selectedBrenda);
-																										} 
-																									}
-																								}
-																							}catch (NullPointerException e1) {
-																								throw new RuntimeException ("This parameter does not exist in the reaction");
-																							} catch (NoSuchAlgorithmException e1) {
-																								// TODO Auto-generated catch block
-																								e1.printStackTrace();
-																							} catch (MalformedURLException e1) {
-																								// TODO Auto-generated catch block
-																								e1.printStackTrace();
-																							} catch (RemoteException e1) {
-																								// TODO Auto-generated catch block
-																								e1.printStackTrace();
-																							}
-																							
-																							
-																							
-																					}
-																					
-																					}
-																				
-																				
-																			}
-
-																		};
-																		
-																		TableCellRenderer ecRenderer = new DefaultTableRenderer(
-																				
-																				new HyperlinkProvider(ecAction));
-																		
-																		
-																		//ecNoTable = new JTable();
-																		ecTable.setModel(ecNoModel);
-																		
-																		
-																		
-																		ecTable.getColumnExt(0).setEditable(false);
-																		ecTable.getColumnExt(0).setCellRenderer(ecRenderer);
-																		//ecNoTable.getColumnModel().getColumn(1).setWidth(6);
-																		if (sp!=null) {
-																              reactionPanel.remove(sp);
-																              reactionPanel.validate();
-																			  reactionPanel.repaint();
-																		}
-															              for(int i = 0; i<ecData[0].length; i++) {
-															            	  ecNoModel.addRow(new Object[] {ecData[0][i],ecData[1][i],ecData[2][i]});
-															            	  
-															            	  System.out.println(ecData[0][i]);
-															            	  System.out.println(ecData[1][i]);
-															            	  System.out.println(ecData[2][i]);
-															            	  reactionPanel.validate();
-																			  reactionPanel.repaint();
-															       		   
-															              }
-															              
-															              
-															              sp = new JScrollPane(ecTable);
-															              
-																		  reactionPanel.add(sp);
-																		  reactionPanel.validate();
-																		  reactionPanel.repaint();
-																		  
-																	
-																		 
-														            }
-																}
-															}
-															}
-														});
-														
-													queryDial.pack();
-													queryDial.setLocationRelativeTo(queryFrame);
-													queryDial.setVisible(true);
-														
-													}
-													}
-													
-												}
-												
-														
-												}
-										
-											});
-									
-								    logDialog.pack();
-								    logDialog.setLocationRelativeTo(loginFrame);
-								    logDialog.setVisible(true);
+									Brenda brenda = new Brenda();
+									brenda.brendaConnect(reactionPanel, paramLabels, paramVals);
 										}
 										
 									});
@@ -843,7 +445,7 @@ public class NewReaction {
 											}else if (variables.getParameter(j).getUsage()==CFunctionParameter.Role_MODIFIER) {
 												System.out.println("Inhibitor:"+variables.getParameter(j).getObjectName());
 												if (chemEq.getModifiers().size()==1) {
-
+													
 
 													reaction.setParameterObject(variables.getParameter(j).getObjectName(), chemEq.getModifier(0).getMetabolite());
 												} 
@@ -965,8 +567,13 @@ public class NewReaction {
 						}else if (reactionPane.getValue().equals(reactionOptions[1])) {
 							reactionDial.dispose();
 							model.removeReaction(reaction.getKey());
-							for (int i = 0; i< model.getNumMetabs(); i++) {
-								model.removeMetabolite(model.getMetabolite(i));
+							int numSubsTemp = (int) reaction.getChemEq().getSubstrates().size();
+							int numProTemp = (int)reaction.getChemEq().getProducts().size();
+							for (int i = 0; i< numSubsTemp; i++) {
+								model.removeMetabolite(reaction.getChemEq().getSubstrate(i).getKey());
+							}
+							for (int i = 0; i< numProTemp; i++) {
+								model.removeMetabolite(reaction.getChemEq().getProduct(i).getKey());
 							}
 							changedObjects.clear();
 							model.compileIfNecessary();

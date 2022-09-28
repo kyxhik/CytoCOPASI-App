@@ -1,8 +1,9 @@
-package org.cytoscape.CytoCopasiApp;
+package org.cytoscape.CytoCopasiApp.Kegg;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -12,51 +13,58 @@ import java.util.Scanner;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class KGMLFixerTrial {
+public class KGMLFixer {
 	static String kgmlString; 
 	static String[] entries;
 	static String[] reactions;
 	static String[] entriesNew;
 	static String[] reactionsNew;
 	static Boolean isConnected;
-	public static void main(String[] args) throws Exception{      
+	File betterKgml;
+	public File fixedKgml (File kgmlFile) {
+		
 		try {
-			kgmlString = new Scanner (new File("/home/people/hkaya/Downloads/hsa00512.xml")).useDelimiter("\\Z").next();
+			kgmlString = new Scanner (new File(kgmlFile.getAbsolutePath())).useDelimiter("\\Z").next();
 			entries = StringUtils.substringsBetween(kgmlString, "<entry", "</entry>");
-			reactions = StringUtils.substringsBetween(kgmlString, "<reaction", "</reaction>");
+			//reactions = StringUtils.substringsBetween(kgmlString, "<reaction", "</reaction>");
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 		for (int i = 0; i< entries.length; i++) {
 			if (entries[i].contains("type=\"line\"")==true || entries[i].contains("type=\"rectangle\"")==true) {
 				kgmlString = kgmlString.replace("<entry"+entries[i].toString()+"</entry>", " ");
-				//entries[i] = entries[i].replace(entries[i], "");
 			}
 		}
 		for (int i = 0; i< entries.length; i++) {
 			
 			if (entries[i].contains("type=\"map\"")==true) {
 				kgmlString = kgmlString.replace("<entry"+entries[i].toString()+"</entry>", "");
-				//entries[i] = entries[i].replace(entries[i], "");
+				
 			} else if (entries[i].contains("type=\"compound\"")==true) {
 				String link = StringUtils.substringBetween(entries[i], "link=\"", "\">");
 				String actualName = getActualName(link);
 				String weirdName= StringUtils.substringBetween(entries[i], "<graphics name=\"", "\" fgcolor=");
 				kgmlString = kgmlString.replace(weirdName, weirdName+":"+actualName);
-				entries[i] = entries[i].replace(weirdName, weirdName+actualName);
+				//entries[i] = entries[i].replace(weirdName, actualName+"_"+weirdName);
+				
+				
 			} else if (entries[i].contains("type=\"gene\"")==true) {
-				//System.out.println(entries[i]);
+				String desiredReactionName = null;
 				String reactionName = StringUtils.substringBetween(entries[i], "reaction=\"", "\"");
+				if (entries[i].contains(",")==true) {
+					desiredReactionName = StringUtils.substringBetween(entries[i], "<graphics name=\"", ",");
+
+				} else {
+					desiredReactionName = StringUtils.substringBetween(entries[i], "<graphics name=\"", "\"");
+
+				}
+				//entries[i] = entries[i].replace(reactionName, desiredReactionName+"_"+i);
+				kgmlString = kgmlString.replace(reactionName, desiredReactionName+"_"+i);
 				
-				String desiredReactionName = StringUtils.substringBetween(entries[i], "<graphics name=\"", ",");
-				entries[i] = entries[i].replace(reactionName, desiredReactionName);
-				
-				kgmlString = kgmlString.replace(reactionName, desiredReactionName);
-				//kgmlString = kgmlString.replace("<entry"+entries[i].toString()+"</entry>", " ");
+			}
 			
-		}}
+		}
 		
 		entriesNew = StringUtils.substringsBetween(kgmlString, "<entry", "</entry>");
 		reactionsNew = StringUtils.substringsBetween(kgmlString, "<reaction", "</reaction>");
@@ -77,7 +85,20 @@ public class KGMLFixerTrial {
 			}
 		
 		}
-		System.out.println(kgmlString);
+		
+		//String newPath = kgmlFile.getAbsolutePath().replace(kgmlFile.getName(), "new"+kgmlFile.getName());
+		//betterKgml = new File(newPath);
+		
+		try {
+			FileWriter kgmlWriter = new FileWriter(kgmlFile);
+			kgmlWriter.write(kgmlString);
+			kgmlWriter.flush();
+			//kgmlWriter.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return kgmlFile;
 		
 	}
 	
@@ -123,4 +144,5 @@ public class KGMLFixerTrial {
 		}
 		
 		return actualName;
-	}}
+	}
+}
