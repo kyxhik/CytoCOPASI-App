@@ -121,7 +121,8 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 				
 				JPanel panel = new JPanel();
 				try {
-					String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+					String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 					CDataModel dm = CRootContainer.addDatamodel();
 					String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 					if (modelName.endsWith(".cps")) {
@@ -292,7 +293,8 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 			ParsingReportGenerator.getInstance().appendLine("Welcome to Time Course Sim");
 			taskMonitor.setProgress(0);
 			//try {
-			String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 	//		ParsingReportGenerator.getInstance().appendLine("model string is:" + modelName);
 //			ParsingReportGenerator.getInstance().appendLine("network name is:" + CyActivator.cyApplicationManager.getCurrentNetworkView().toString());
 			simval = setData();

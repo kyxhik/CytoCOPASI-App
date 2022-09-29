@@ -154,7 +154,8 @@ public class NodeDialog extends JDialog {
 		    changedObjects = new ObjectStdVector();
 		    String modelName;
 			try {
-				modelName = new Scanner(CyActivator.getReportFile(1)).next();
+				 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 				
 				Image image = null;
 		        URL url = null;

@@ -411,7 +411,8 @@ public class ParameterScan extends AbstractCyAction{
 			
 			taskMonitor.setProgress(0);
 			
-			String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 			String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 			//ParsingReportGenerator.getInstance().appendLine("Model String: " + modelString);
 			 dataModel = CRootContainer.addDatamodel();
@@ -691,7 +692,8 @@ public class ParameterScan extends AbstractCyAction{
 			paramItem = new DefaultMutableTreeNode(categoryNames[a]);
 			item.add(paramItem);
 			try {
-				String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+				String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 				CDataModel dm = CRootContainer.addDatamodel();
 				String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 				dm.loadFromString(modelString);

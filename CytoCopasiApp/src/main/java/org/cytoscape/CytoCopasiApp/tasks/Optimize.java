@@ -540,7 +540,7 @@ public class Optimize extends AbstractCyAction{
 		
 		
 		try {
-			String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 			CDataModel dm = CRootContainer.addDatamodel();
 			String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 			dm.loadFromString(modelString);
@@ -645,7 +645,7 @@ public class Optimize extends AbstractCyAction{
 			
 			taskMonitor.setProgress(0);
 			
-			String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 			String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 			//ParsingReportGenerator.getInstance().appendLine("Model String: " + modelString);
 			CDataModel dataModel = CRootContainer.addDatamodel();
@@ -772,7 +772,8 @@ public class Optimize extends AbstractCyAction{
 			
 			
 			try {
-				String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+				String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 				String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 				
 				CDataModel dataModel = CRootContainer.addDatamodel();
@@ -824,7 +825,8 @@ public class Optimize extends AbstractCyAction{
 		
 		public CCopasiParameter parameterConverter(String expression) {
 			try {
-				String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+				String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 				String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 				
 				CDataModel dataModel = CRootContainer.addDatamodel();

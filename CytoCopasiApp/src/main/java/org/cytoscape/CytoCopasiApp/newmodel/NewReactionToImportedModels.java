@@ -137,7 +137,8 @@ public class NewReactionToImportedModels {
 	public void addReaction(String quantityUnit, String timeUnit, CyNetwork copasiNetwork, CDataObject object, ObjectStdVector changedObjects) {
 		String modelName;
 		try {
-			modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 			dataModel = CRootContainer.addDatamodel();
 			String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 			if (modelName.endsWith(".cps")) {
@@ -1083,7 +1084,8 @@ public static void setDefaultCursor(JFrame frame) {
 public void removeReaction (CyNetwork myNetwork) {
 	String modelName;
 	try {
-		modelName = new Scanner(CyActivator.getReportFile(1)).next();
+		 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 		dataModel = CRootContainer.addDatamodel();
 		String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 		if (modelName.endsWith(".cps")) {

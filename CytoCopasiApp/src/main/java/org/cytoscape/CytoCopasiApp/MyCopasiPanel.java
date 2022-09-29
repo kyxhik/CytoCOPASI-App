@@ -279,7 +279,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				String modelName;
 				dm = CRootContainer.addDatamodel();
 				try {
-					modelName = new Scanner(CyActivator.getReportFile(1)).next();
+					 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 					
 					String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 					if (modelName.endsWith(".cps")) {
@@ -335,7 +336,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 						String modelName;
 						dm = CRootContainer.addDatamodel();
 						try {
-							modelName = new Scanner(CyActivator.getReportFile(1)).next();
+							 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 							
 							String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 							if (modelName.endsWith(".cps")) {
@@ -426,7 +428,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					String modelName;
 					dm = CRootContainer.addDatamodel();
 					try {
-						modelName = new Scanner(CyActivator.getReportFile(1)).next();
+						 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 						
 						String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 						if (modelName.endsWith(".cps")) {
@@ -527,7 +530,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				add(newModelActionBox);
 				dm = CRootContainer.addDatamodel();
 				try {
-					String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+					String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 					
 					String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 					if (modelName.endsWith(".cps")) {
@@ -582,7 +586,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 						String modelName;
 						dm = CRootContainer.addDatamodel();
 						try {
-							modelName = new Scanner(CyActivator.getReportFile(1)).next();
+							 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 							
 							String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 							if (modelName.endsWith(".cps")) {
@@ -666,7 +671,8 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					String modelName;
 					dm = CRootContainer.addDatamodel();
 					try {
-						modelName = new Scanner(CyActivator.getReportFile(1)).next();
+						 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 						
 						String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 						if (modelName.endsWith(".cps")) {

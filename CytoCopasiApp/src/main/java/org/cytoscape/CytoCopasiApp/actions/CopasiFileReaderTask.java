@@ -207,7 +207,7 @@ private static final int BUFFER_SIZE = 16384;
            String xml = inputStream2String(stream);
            id2Node = new HashMap<>();
 
-           String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+   		String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
            CDataModel dm  = CRootContainer.addDatamodel();
            //if (modelName.endsWith(".cps")) {
            dm.loadFromString(xml);
@@ -304,7 +304,7 @@ private static final int BUFFER_SIZE = 16384;
      void readCore(CyNetwork network ,CModel model, String xml) {
          String modelName;
 		try {
-			modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 		
         // SBMLDocument & Model //
         // Mark network as SBML
@@ -492,7 +492,8 @@ private static final int BUFFER_SIZE = 16384;
     public void setSBMLTable(CyNetwork network) {
         String modelName;
 		try {
-			modelName = new Scanner(CyActivator.getReportFile(1)).next();
+			 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 			CDataModel dm = CRootContainer.addDatamodel();
 			if (modelName.contains(".xml")) {
 	    	try {

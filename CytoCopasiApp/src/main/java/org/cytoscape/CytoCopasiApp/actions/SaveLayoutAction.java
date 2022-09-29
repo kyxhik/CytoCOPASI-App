@@ -82,7 +82,8 @@ public class SaveLayoutAction extends AbstractCyAction{
 			try {
 				
 				
-				String modelName = new Scanner(CyActivator.getReportFile(1)).next();
+				String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
+
 				CDataModel dm = CRootContainer.addDatamodel();
 				String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 				dm.loadFromString(modelString);
