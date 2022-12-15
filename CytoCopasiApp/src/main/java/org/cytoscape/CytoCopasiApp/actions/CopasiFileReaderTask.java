@@ -123,7 +123,7 @@ public class CopasiFileReaderTask extends AbstractTask implements CyNetworkReade
       
         // layout
         if (cyLayoutAlgorithmManager != null) {
-            CyLayoutAlgorithm layout = cyLayoutAlgorithmManager.getLayout("hierarchical");
+            CyLayoutAlgorithm layout = cyLayoutAlgorithmManager.getLayout("force-directed");
             if (layout == null) {
                 layout = cyLayoutAlgorithmManager.getLayout(CyLayoutAlgorithmManager.DEFAULT_LAYOUT_NAME);
             }
@@ -185,7 +185,7 @@ private static final int BUFFER_SIZE = 16384;
             }
             ParsingReportGenerator.getInstance().appendLine("java.library.path: " + System.getProperty("java.library.path"));
             File nativeLib = CyActivator.getNativeLib();
-            File nativeLibMac = CyActivator.getNativeLibMac();
+           File nativeLibMac = CyActivator.getNativeLibMac();
             File nativeLibWindows = CyActivator.getNativeLibWindows();
             
             String dests = System.getProperty("java.library.path");
@@ -198,7 +198,7 @@ private static final int BUFFER_SIZE = 16384;
             		File destMac = new File(destsList[i]+"/libCopasiJava.jnilib");
             		File destWindows = new File(destsList[i]+"\'CopasiJava.dll");
                     Files.copy(nativeLib.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    Files.copy(nativeLibMac.toPath(), destMac.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                  Files.copy(nativeLibMac.toPath(), destMac.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     Files.copy(nativeLibWindows.toPath(), destWindows.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
             	}

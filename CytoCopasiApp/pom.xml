@@ -116,7 +116,7 @@
     
     
     
-    <dependencies>
+    <dependencies> 
        <dependency>
       <groupId>org.cytoscape</groupId>
       <artifactId>application-api</artifactId>
@@ -260,6 +260,11 @@
 		<groupId>stoichiometry</groupId>
 		<artifactId>stoichiometry</artifactId>
 		<version>1.0</version>
+	</dependency>
+	<dependency>
+		<groupId>org.mariuszgromada.math</groupId>
+		<artifactId>MathParser.org-mXparser</artifactId>
+		<version>5.0.7</version>
 	</dependency>
 
 	<dependency>

@@ -392,12 +392,12 @@ public class NewReaction {
 
 
 									if(reactantProduct[0].contains(metabolites[i]) == true) {
-										CyNode reactantNode = newNetwork.createSpeciesNode(copasiNetwork, metabolites[i], "species", newMetab.getKey(), object.getCN().getString(), newMetab.getObjectDisplayName(),compartment.getText(), 1.0, "Reactions");
+										newNetwork.createSpeciesNode(copasiNetwork, metabolites[i], "species", newMetab.getKey(), object.getCN().getString(), newMetab.getObjectDisplayName(),compartment.getText(), 1.0, "Reactions");
 
 									}else if (reactantProduct[1].contains(metabolites[i]) == true) {
-										CyNode productNode = newNetwork.createSpeciesNode(copasiNetwork, metabolites[i], "species", newMetab.getKey(), object.getCN().getString(), newMetab.getObjectDisplayName(),compartment.getText(), 1.0, "Reactions");
+										newNetwork.createSpeciesNode(copasiNetwork, metabolites[i], "species", newMetab.getKey(), object.getCN().getString(), newMetab.getObjectDisplayName(),compartment.getText(), 1.0, "Reactions");
 									}else if (reactantProduct.length == 3) {
-										CyNode modifierNode = newNetwork.createSpeciesNode(copasiNetwork, metabolites[i], "species", newMetab.getKey(), object.getCN().getString(), newMetab.getObjectDisplayName(),compartment.getText(), 1.0, "Reactions");
+										newNetwork.createSpeciesNode(copasiNetwork, metabolites[i], "species", newMetab.getKey(), object.getCN().getString(), newMetab.getObjectDisplayName(),compartment.getText(), 1.0, "Reactions");
 									}
 
 								}
@@ -524,12 +524,12 @@ public class NewReaction {
 									int numNodes = copasiNetwork.getNodeCount();
 									for(int i=0; i< numNodes; i++) {
 										if(reactantProduct[0].contains(AttributeUtil.get(copasiNetwork, copasiNetwork.getNodeList().get(i), "name", String.class))==true) {
-											CyEdge myEdge = newNetwork.createEdge(copasiNetwork, copasiNetwork.getNodeList().get(i), reactionNode, "reaction");
+											newNetwork.createEdge(copasiNetwork, copasiNetwork.getNodeList().get(i), reactionNode, "reaction");
 										}else if(reactantProduct[1].contains(AttributeUtil.get(copasiNetwork, copasiNetwork.getNodeList().get(i), "name", String.class))==true) {
-											CyEdge myEdge = newNetwork.createEdge(copasiNetwork, reactionNode, copasiNetwork.getNodeList().get(i), "reaction");
+											newNetwork.createEdge(copasiNetwork, reactionNode, copasiNetwork.getNodeList().get(i), "reaction");
 
 										}else if(modifier.contains(AttributeUtil.get(copasiNetwork, copasiNetwork.getNodeList().get(i), "name", String.class))==true) {
-											CyEdge myEdge = newNetwork.createEdge(copasiNetwork, reactionNode, copasiNetwork.getNodeList().get(i), "reaction-inhibitor");
+											newNetwork.createEdge(copasiNetwork, reactionNode, copasiNetwork.getNodeList().get(i), "reaction-inhibitor");
 										}
 										CyNetworkView view = CyActivator.networkViewManager.getNetworkViews(copasiNetwork).iterator().next();
 										
@@ -667,6 +667,8 @@ public class NewReaction {
 									myNetwork.removeNodes((Collections.singleton(specNode)));
 									String speciesKey = model.getMetabolite(speciesName).getKey();
 									model.removeMetabolite(speciesKey);
+									CyActivator.cyEventHelper.flushPayloadEvents();
+									
 								}
 
 							}

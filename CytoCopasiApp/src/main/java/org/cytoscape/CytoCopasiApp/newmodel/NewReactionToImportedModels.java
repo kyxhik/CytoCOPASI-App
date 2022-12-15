@@ -868,13 +868,13 @@ public class NewReactionToImportedModels {
 									for (int j=0;j< variables.size(); j++) {
 										if (variables.getParameter(j).getUsage()==CFunctionParameter.Role_SUBSTRATE) {
 
-											if (chemEq.getSubstrates().size()==1) {
+										//	if (chemEq.getSubstrates().size()==1) {
 												System.out.println("substrate:"+variables.getParameter(j).getObjectName());
 
 												reaction.setParameterObject(variables.getParameter(j).getObjectName(), chemEq.getSubstrate(0).getMetabolite());
-											} else {
-												throw new RuntimeException("This formula is invalid because there is more than one substrate");
-											}
+											//} else {
+											//	throw new RuntimeException("This formula is invalid because there is more than one substrate");
+											//}
 										}else if (variables.getParameter(j).getUsage()==CFunctionParameter.Role_PRODUCT) {
 											if (chemEq.getProducts().size()==1) {
 												System.out.println("product:"+variables.getParameter(j).getObjectName());
@@ -994,33 +994,33 @@ public class NewReactionToImportedModels {
 
 								myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
 								String osName = System.getProperty("os.name");
-								if (osName.equals("Windows")) {
-									if(modelName.endsWith("cps")) {
+								if (osName.equals("Windows")==true) {
+									//if(modelName.endsWith("cps")==true) {
 									myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.cps";
-									}else {
-										myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.xml";
+									//}else {
+									//	myPath = CyActivator.getCopasiDir().getAbsolutePath() + "\\"+ "temp.xml";
 
-									}
+									//}
 									} else {
-										if(modelName.endsWith("cps")) {
+										//if(modelName.endsWith("cps")==true) {
 									myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.cps";
-										}else {
-											myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.xml";
+										//}else {
+										//	myPath = CyActivator.getCopasiDir().getAbsolutePath() + "/"+ "temp.xml";
 
-										}
+									//	}
 								}
 
 								//File tempFile = new File(myPath);
-								if (modelName.endsWith(".cps")) {
+							
 								dataModel.saveModel(myPath,true);
-								} else {
-									try {
+								
+								/*	try {
 										dataModel.exportSBML(myPath.replace("cps", "xml"),true);
 									} catch (Exception e) {
 										// TODO Auto-generated catch block
 										e.printStackTrace();
-									}
-								}
+									}*/
+								
 								try {
 									f2 = new FileWriter(myFile, false);
 									f2.write(myPath);

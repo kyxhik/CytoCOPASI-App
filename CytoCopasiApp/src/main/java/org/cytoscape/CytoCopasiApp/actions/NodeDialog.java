@@ -348,7 +348,7 @@ public class NodeDialog extends JDialog {
 								}
 								
 								model.getMetabolite(i).compileIsInitialValueChangeAllowed();
-								
+								model.getMetabolite(i).setObjectName(theName.getText());
 								model.getMetabolite(i).setInitialConcentration(Double.parseDouble(initConcField.getText()));
 								changedObjects.add(model.getMetabolite(i).getInitialConcentrationReference());
 								model.updateInitialValues(changedObjects);
@@ -731,6 +731,12 @@ public class NodeDialog extends JDialog {
 				    	Object[] rateLawAddOptions = {"Apply", "Cancel"};
 						int rateLawAddDialog = JOptionPane.showOptionDialog(owner, newRateLawPanel, "Change Rate Law", JOptionPane.PLAIN_MESSAGE, 1, null, rateLawAddOptions, rateLawAddOptions[0]);
 						if (rateLawAddDialog == 0) {
+							if (newParameters==null) {
+								for (int i = 0 ; i<parameterSplit.length; i++) {
+									
+									nodeAttributesRow.set(parameterSplit[i], Double.parseDouble(rateLawTable.getValueAt(editRateLawModel.getRowCount()-parameterSplit.length+i, 2).toString()));
+								}
+							}
 							String changedFormulaName = rateLawCombo.getSelectedItem().toString();
 							rateLaw = changedFormulaName;
 							rateLawFormula = formulaPanelLabel.getText();
@@ -756,25 +762,7 @@ public class NodeDialog extends JDialog {
 						
 						reaction.setFunction(rateLaw);
 						reaction.getFunction().setInfix(rateLawFormula);
-						for (int i=0; i< parameterSplit.length; i++) {
-							network.getDefaultNodeTable().deleteColumn(parameterSplit[i]);
-							reaction.getParameters().removeParameter(parameterSplit[i]);
-						}
 						
-						newParameters = parJoiner.toString().split(", ");
-						for (int i=0; i<newParameters.length; i++) {
-							System.out.println("newParamters:"+newParameters[i]);
-							System.out.println("rows:"+editRateLawModel.getRowCount());
-
-							System.out.println("subs:"+substrateSplit.length);
-							System.out.println("pros:"+productSplit.length);
-
-							System.out.println("reaction"+reaction.getObjectName());
-							int rowIndex = editRateLawModel.getRowCount()-substrateSplit.length-productSplit.length+i+1;
-							System.out.println("row index:"+rowIndex);
-							
-							AttributeUtil.set(network, node, newParameters[i],Double.parseDouble(editRateLawModel.getValueAt(rowIndex, 2).toString()) , Double.class);
-						}
 						String finalFormula = rateLawNameLabel.getText();
 						nodeAttributesRow.set("reversible", revCheckBox.isSelected());
 						
@@ -794,13 +782,33 @@ public class NodeDialog extends JDialog {
 							}
 						}
 						
-						nodeAttributesRow.set("parameters", parJoiner.toString());
+						
 						nodeAttributesRow.set("Chemical Equation", chemEqField.getText());
 						nodeAttributesRow.set("Rate Law", finalFormula);
 						nodeAttributesRow.set("Rate Law Formula", functionDB.findFunction(finalFormula).getInfix());
 							
 							reaction.setReversible(revCheckBox.isSelected());
+							if (parJoiner!=null) {
+							nodeAttributesRow.set("parameters", parJoiner.toString());
+							newParameters = parJoiner.toString().split(", ");
+							for (int i=0; i< parameterSplit.length; i++) {
+								network.getDefaultNodeTable().deleteColumn(parameterSplit[i]);
+								reaction.getParameters().removeParameter(parameterSplit[i]);
+							}
 							
+							for (int i=0; i<newParameters.length; i++) {
+								System.out.println("newParamters:"+newParameters[i]);
+								System.out.println("rows:"+editRateLawModel.getRowCount());
+
+								System.out.println("subs:"+substrateSplit.length);
+								System.out.println("pros:"+productSplit.length);
+
+								System.out.println("reaction"+reaction.getObjectName());
+								int rowIndex = editRateLawModel.getRowCount()-substrateSplit.length-productSplit.length+i+1;
+								System.out.println("row index:"+rowIndex);
+								
+								AttributeUtil.set(network, node, newParameters[i],Double.parseDouble(editRateLawModel.getValueAt(rowIndex, 2).toString()) , Double.class);
+							}
 							
 							for (int j = 0 ; j< newParameters.length; j++) {
 								if (reaction.getParameters().getParameter(j).getObjectName().equals(newParameters[j])==true);
@@ -812,8 +820,21 @@ public class NodeDialog extends JDialog {
 								model.updateInitialValues(changedObjects);
 								
 								//ParsingReportGenerator.getInstance().appendLine("new parameter value: " + reaction.getParameters().getParameter(j).getObjectName() + ":" +  reaction.getParameters().getParameter(j).getDblValue());
+							}}else {
+								long numPar = reaction.getParameters().size();
+								for (int j = 0 ; j< numPar; j++) {
+									if (reaction.getParameters().getParameter(j).getObjectName().equals(parameterSplit[j]));
+									reaction.getParameters().getParameter(j).setDblValue(nodeAttributesRow.get(parameterSplit[j], Double.class));
+									reaction.getParameters().getParameter(j).isEditable();
+									changedObjects.add(reaction.getParameters().getParameter(j).getValueReference());
+									model.compileIfNecessary();
+									model.updateInitialValues(changedObjects);
+									
+									//ParsingReportGenerator.getInstance().appendLine("new parameter value: " + reaction.getParameters().getParameter(j).getObjectName() + ":" +  reaction.getParameters().getParameter(j).getDblValue());
+								}
+								model.updateInitialValues(changedObjects);
 							}
-							
+							//
 							myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
 							String osName = System.getProperty("os.name");
 							if (osName.equals("Windows")) {
@@ -854,9 +875,6 @@ public class NodeDialog extends JDialog {
 									e1.printStackTrace();
 								}
 							}
-		
-							
-							
 
 						
 						dispose();

@@ -27,7 +27,10 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -71,6 +74,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 	private String IntervalSize;
 	private String StartTime;
 	private String menuName;
+	private String customPlotItem;
 	private double[] data;
 	private double[] simval;
 	private String option;
@@ -85,6 +89,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 	Object[][] csvdata;
 	double[] timedata;
 	String[] csvColumns ;
+	JTextArea customCurve;
 	private TimeCourseSimulationTask.TimeCourseTask parentTask;
 	
 	
@@ -120,6 +125,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 				public void actionPerformed (ActionEvent e) {
 				
 				JPanel panel = new JPanel();
+				panel.setPreferredSize(new Dimension(700,700));
 				try {
 					String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 
@@ -139,20 +145,53 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 					String[] possibilities = new String[numreact];
 					
 					for (int a = 0 ; a< numreact; a++) {
-						if (model.getMetabolite(a).getStatus() != 0) {
+						//if (model.getMetabolite(a).getStatus() != 0) {
 						possibilities[a] = model.getMetabolite(a).getObjectDisplayName();
-						}
+						//}
 					}
 				
 					
 					JList<String> list = new JList<String>(possibilities);
-					list.setPreferredSize(new Dimension(200,600));
-					JScrollPane scrollPane = new JScrollPane(list);
-					scrollPane.setPreferredSize(new Dimension(200,200));
-					panel.add(scrollPane);
 					
+					JScrollPane scrollPane = new JScrollPane(list);
+					scrollPane.setPreferredSize(new Dimension(200,400));
+					
+					panel.add(scrollPane);
+				
+					JButton customCurveBtn = new JButton("Custom");
+					panel.add(customCurveBtn);
+					customCurveBtn.addActionListener(new ActionListener() {
+
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							// TODO Auto-generated method stub
+							 customCurve = new JTextArea(1,8);
+							panel.add(customCurve);
+							panel.validate();
+							panel.repaint();
+							list.addListSelectionListener (new ListSelectionListener()
+						    {
+
+						        public void valueChanged (ListSelectionEvent e)
+						        {
+						            if (e.getValueIsAdjusting ( ) == false)
+						            {   
+						               
+						                customCurve.append(list.getSelectedValue());
+						            }
+						        }
+
+						    });
+							
+
+						}
+						
+					});
+					panel.validate();
+					panel.repaint();
 					
 					JOptionPane.showMessageDialog(null, panel, "Select Species to Plot", JOptionPane.QUESTION_MESSAGE);
+					
 					myspecies = list.getSelectedValues();
 					
 					
@@ -165,14 +204,7 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				
-				
-				
-				
-				
-				
-				
-			
+	
 			}
 			
 				});	
@@ -206,17 +238,22 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 	       IntervalSize = cField.getText();
 	       StartTime = dField.getText();
 	       sbmlSimBool = sbmlSimCheck.isSelected();
+	       if (customCurve!=null) {
+	    	   customPlotItem = customCurve.getText();
+	       }
 	       simval = setData();
+	       final TimeCourseTask task = new TimeCourseTask(data, sbmlSimBool, myspecies);
+			CyActivator.taskManager.execute(new TaskIterator(task));
 	       
-	       
+	    } else {
+	    	frame.dispose();
 	    }
 	    
 	   
 	   // long[] simval = setData();
 	   
 		
-		final TimeCourseTask task = new TimeCourseTask(data, sbmlSimBool, myspecies);
-		CyActivator.taskManager.execute(new TaskIterator(task));
+		
 		
 	}
 	
@@ -314,6 +351,11 @@ public class TimeCourseSimulationTask extends AbstractCyAction {
 		//	} finally {
 		//		System.gc();
 		//	}
+		}
+		
+		@Override
+		public void cancel() {
+			
 		}
 		
 		public void simulation(double[] simval, String modelName, Object[] plotspecies, TaskMonitor taskMonitor, TimeCourseSimulationTask.TimeCourseTask timeCourseTask) throws Exception {

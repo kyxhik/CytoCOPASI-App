@@ -50,6 +50,8 @@ public class ComparativeStdSt {
 	String valuesString;
 	String[] valueArray;
 	String ctrAttrName1;
+	String ctrAttrName2;
+
 	PassthroughMapping pMapping ;
 	PassthroughMapping pMapping_tooltip;
 	DiscreteMapping pMapping_color;
@@ -60,6 +62,8 @@ public class ComparativeStdSt {
 		this.synchronousTaskManager = synchronousTaskManager;
 	}
 	   
+	
+	
 	public void compare(File csvFile, long num, Object[][] data, CyNetwork currentNetwork,java.util.List<CyNode> nodes, double[] attr, CyNetworkView networkView) {
 		BufferedReader br;
 		try {
@@ -87,7 +91,6 @@ public class ComparativeStdSt {
 			colVals = new double[valueArray.length];
 			for (int i=0; i<valueArray.length-1;i++) {
 				colVals[i] = Double.parseDouble(valueArray[i]);
-				System.out.println(colVals[i]);
 			}
 		} else {
 		 valuesString = values.toString();
@@ -95,17 +98,9 @@ public class ComparativeStdSt {
 			colVals = new double[valueArray.length-1];
 			for (int i=0; i<valueArray.length-1;i++) {
 				colVals[i] = Double.parseDouble(valueArray[i+1]);
-				System.out.println(colVals[i]);
 			}
 		}
 		 
-		
-		
-		
-		
-
-		
-
 		int nodenumber = currentNetwork.getNodeCount();
 		
 			
@@ -135,8 +130,18 @@ public class ComparativeStdSt {
 						
 						 ctrAttrName1 = "selectivity coefficient for view";
 					} else {
-					AttributeUtil.set(currentNetwork, node, "percentage change", 100*Math.abs((difference)/(colVals[a])), Double.class);
-					 ctrAttrName1 = "percentage change";
+
+						AttributeUtil.set(currentNetwork, node, "percentage change", 100*Math.abs((difference)/(colVals[a])), Double.class);
+
+						if (100*Math.abs((difference)/(colVals[a]))>300) {
+							AttributeUtil.set(currentNetwork, nodes.get(i), "percentage change for mapping", 300.0, Double.class);
+
+						} else {
+							AttributeUtil.set(currentNetwork, node, "percentage change for mapping", 100*Math.abs((difference)/(colVals[a])), Double.class);
+					 
+						}
+						ctrAttrName1 = "percentage change";
+						ctrAttrName2 = "percentage change for mapping";
 					}
 					if (difference>0) {
 						AttributeUtil.set(currentNetwork, node, "variation", "Increase", String.class);
@@ -157,7 +162,7 @@ public class ComparativeStdSt {
 			
 			VisualStyle visStyle = CyActivator.visualMappingManager.getVisualStyle(networkView);
 			
-			 pMapping = (PassthroughMapping) CyActivator.vmfFactoryP.createVisualMappingFunction(ctrAttrName1, Double.class, BasicVisualLexicon.NODE_SIZE);
+			 pMapping = (PassthroughMapping) CyActivator.vmfFactoryP.createVisualMappingFunction(ctrAttrName2, Double.class, BasicVisualLexicon.NODE_SIZE);
 			 pMapping_tooltip = (PassthroughMapping) CyActivator.vmfFactoryP.createVisualMappingFunction(ctrAttrName1, Double.class, BasicVisualLexicon.NODE_TOOLTIP);
 			
 			visStyle.addVisualMappingFunction(pMapping);
@@ -166,7 +171,7 @@ public class ComparativeStdSt {
 			 CyActivator.visualMappingManager.setCurrentVisualStyle(visStyle);
 		        visStyle.apply(networkView);
 		        
-		        CyLayoutAlgorithm layout = CyActivator.cyLayoutAlgorithmManager.getLayout("attributes-layout");
+		        CyLayoutAlgorithm layout = CyActivator.cyLayoutAlgorithmManager.getLayout("force-directed");
 
 		        if (networkView==null) {
 		        	networkView = CyActivator.networkViewManager.getNetworkViews(currentNetwork).iterator().next();

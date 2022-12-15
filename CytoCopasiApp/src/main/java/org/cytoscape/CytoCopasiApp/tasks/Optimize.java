@@ -45,6 +45,7 @@ import org.COPASI.CCopasiParameter;
 import org.COPASI.CCopasiTask;
 import org.COPASI.CDataModel;
 import org.COPASI.CDataObject;
+import org.COPASI.CMetab;
 import org.COPASI.CModel;
 import org.COPASI.CModelEntity;
 import org.COPASI.CModelValue;
@@ -60,6 +61,7 @@ import org.COPASI.CTrajectoryTask;
 import org.COPASI.DataModelVector;
 import org.COPASI.ObjectStdVector;
 import org.COPASI.ReportItemVector;
+import org.apache.commons.lang3.StringUtils;
 import org.cytoscape.CytoCopasiApp.CyActivator;
 import org.cytoscape.CytoCopasiApp.GetTable;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
@@ -99,7 +101,8 @@ public class Optimize extends AbstractCyAction{
 	DefaultListModel<String> upperBounds;
 	DefaultListModel<String> startVals;
 	private double[] startValue;
-	
+	 COptItem optItem;
+	 CCopasiParameter paramet;
 	private Optimize.OptimTask parentTask;
 	public Optimize(CySwingApplication cySwingApplication, FileUtil fileUtil) {
 		super(Optimize.class.getSimpleName());
@@ -491,7 +494,7 @@ public class Optimize extends AbstractCyAction{
 	               "Copasi Optimization Task", JOptionPane.PLAIN_MESSAGE, 1, null, options, options[2]);
 	    
 		
-		if (result == (JOptionPane.OK_OPTION)); {
+		if (result == (JOptionPane.OK_OPTION)) {
 			
 			
 			xpression = field2.getText();
@@ -518,10 +521,13 @@ public class Optimize extends AbstractCyAction{
 			
 			
 			optData = setOptData();
+			final OptimTask task = new OptimTask();
+			CyActivator.taskManager.execute(new TaskIterator(task));
+		} else {
+			frame.dispose();
 		}
 		
-		final OptimTask task = new OptimTask();
-		CyActivator.taskManager.execute(new TaskIterator(task));	
+			
 	}
 	
 	
@@ -663,11 +669,11 @@ public class Optimize extends AbstractCyAction{
 			CTrajectoryProblem problem = (CTrajectoryProblem)timeCourseTask.getProblem();
 			
 			// simulate 10 steps
-		     problem.setStepNumber(10);
+		     problem.setStepNumber(15000);
 		     // start at time 0
 		     dataModel.getModel().setInitialTime(0.0);
 		     // simulate a duration of 1 time units
-		     problem.setDuration(1);
+		     problem.setDuration(15000.0);
 		     // tell the problem to actually generate time series data
 		     problem.setTimeSeriesRequested(true);
 			
@@ -695,10 +701,22 @@ public class Optimize extends AbstractCyAction{
 			 String[] finalLowB = (String[]) optData[4];
 			 String[] finalUpB = (String[]) optData[5];
 			 String[] finalStV = (String[]) optData[6];
-			 
+			
 			 for (int x=0; x<finalParameters.length; x++) {
-			 CCopasiParameter paramet = parameterConverter(finalParameters[x]);
-			 COptItem optItem = optProblem.addOptItem(paramet.getValueReference().getCN());
+				//CDataObject scanObj =  dataModel.findObjectByDisplayName(finalParameters[x].toString());
+				if (finalParameters[x].contains("_0")) {
+					String displayName= StringUtils.substringBetween(finalParameters[x], "[", "]");
+					// resolve model elements to their initial value reference
+				//	CDataObject scanObj =  ((CModelEntity) dataModel.findObjectByDisplayName(displayName)).getInitialValueReference();
+					CDataObject pr =  model.getMetabolite(displayName).getInitialConcentrationReference();
+					
+					optItem = optProblem.addOptItem(pr.getCN());
+				} else {
+				
+				 paramet = parameterConverter(finalParameters[x]);
+				 optItem = optProblem.addOptItem(paramet.getValueReference().getCN());
+				}
+			 
 			 optItem.setLowerBound(new CCommonName(finalLowB[x]));
 		     optItem.setUpperBound(new CCommonName(finalUpB[x]));
 			 double initialVal = Double.parseDouble(finalStV[x]);
@@ -832,10 +850,20 @@ public class Optimize extends AbstractCyAction{
 				CDataModel dataModel = CRootContainer.addDatamodel();
 				dataModel.loadFromString(modelString);
 				CModel model = dataModel.getModel();
+				/*if (expression.contains("_0")) {
+					for (int a=0; a<model.getNumMetabs(); a++) {
+						if (expression.contains(model.getMetabolite(a).getObjectDisplayName())){
+							newParameter=(CCopasiParameter) model.getMetabolite(a).getDataObject();
+							return newParameter;
+
+						}
+					}
+				}*/
 				for (int a = 0; a<model.getNumReactions(); a++) {
 					for (int b = 0; b<model.getReaction(a).getParameters().size(); b++) {
 						if (expression.contains(model.getReaction(a).getParameters().getParameter(b).getObjectDisplayName())) {
 						newParameter = model.getReaction(a).getParameters().getParameter(b);
+						
 					return newParameter;
 					}
 					}

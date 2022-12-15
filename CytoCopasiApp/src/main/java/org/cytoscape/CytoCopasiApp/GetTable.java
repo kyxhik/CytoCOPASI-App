@@ -21,8 +21,7 @@ public class GetTable {
 		jt.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		jt.setBounds(60,80,600,900);
 		JScrollPane sp = new JScrollPane(jt);
-		//f.add(sp);
-		//f.setSize(300,400);
+	
 		 int[] pallet = makeGradientPallet();
 		 jt.setDefaultRenderer(Double.class, new DefaultTableCellRenderer() {
 		      @Override public Component getTableCellRendererComponent(
@@ -37,7 +36,6 @@ public class GetTable {
 		        return this;
 		      }
 		    });
-		//f.setVisible(true);
 		return sp;
 }
 	private static int[] makeGradientPallet() {

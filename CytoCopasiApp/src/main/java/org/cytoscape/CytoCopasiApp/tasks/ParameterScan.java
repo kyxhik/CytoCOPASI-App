@@ -1,6 +1,7 @@
 package org.cytoscape.CytoCopasiApp.tasks;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -14,10 +15,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Scanner;
 
 import javax.swing.Box;
@@ -42,6 +45,7 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.text.NumberFormatter;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
 
 import org.COPASI.CCommonName;
@@ -84,16 +88,20 @@ import org.COPASI.FloatStdVector;
 import org.COPASI.ObjectStdVector;
 import org.COPASI.ReportItemVector;
 import org.COPASI.SWIGTYPE_p_std__vectorT_std__vectorT_double_t_t;
+import org.apache.commons.lang3.StringUtils;
 import org.cytoscape.CytoCopasiApp.AttributeUtil;
 import org.cytoscape.CytoCopasiApp.CyActivator;
 import org.cytoscape.CytoCopasiApp.GetTable;
+import org.cytoscape.CytoCopasiApp.MyCopasiPanel;
 import org.cytoscape.CytoCopasiApp.Report.ParsingReportGenerator;
 import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyTable;
+import org.cytoscape.util.swing.FileChooserFilter;
 import org.cytoscape.util.swing.FileUtil;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.presentation.property.BasicVisualLexicon;
 import org.cytoscape.view.vizmap.VisualStyle;
@@ -116,8 +124,12 @@ public class ParameterScan extends AbstractCyAction{
 	JTextField intervalField;
 	JTextField minField;
 	JTextField maxField;
+	JTextField newParam;
 	JComboBox scanItem;
 	JComboBox taskItem;
+	JButton resetButton ;
+	JButton saveButton;
+	 JLabel[] modLabels;
 	String[] myParameter;
 	String myVariable;
 	String myTask;
@@ -158,6 +170,7 @@ public class ParameterScan extends AbstractCyAction{
 	String[] finalScanItems ;
 	String[] finalInit ;
 	String[] finalFinal;
+	File myFile;
 	PassthroughMapping pMapping ;
 	PassthroughMapping pMapping_tooltip;
 	DiscreteMapping pMapping_color;
@@ -169,10 +182,11 @@ public class ParameterScan extends AbstractCyAction{
 
 	
 	public void actionPerformed(ActionEvent e) {
+		
 		JFrame frame = new JFrame("Parameter Scan");
 		JPanel myPanel = new JPanel();
 		frame.setPreferredSize(new Dimension(600,600));
-		myPanel.setPreferredSize(new Dimension(600,600));
+		myPanel.setPreferredSize(new Dimension(700,600));
 		myPanel.setLayout(new GridLayout(15, 15));
 		
 		JLabel selectedParamLabel = new JLabel("Object");
@@ -233,7 +247,8 @@ public class ParameterScan extends AbstractCyAction{
 				JLabel newLowLabel = new JLabel("From");
 				JLabel newUpLabel = new JLabel("To");
 				JButton newBtnParam = new JButton("->");
-				JTextField newParam = new JTextField(30);
+				JButton removeParam = new JButton("x");
+				 newParam = new JTextField(30);
 				newParam.setEditable(false);
 				JTextField newLow = new JTextField(5);
 				JTextField newUp = new JTextField(5);
@@ -245,22 +260,46 @@ public class ParameterScan extends AbstractCyAction{
 				newParamBox.add(newUpLabel);
 				newParamBox.add(newUp);
 				
+				
 				count++;
 				overallParam.add(newParamBox);
 				myPanel.add(overallParam);
 				myPanel.validate();
 				myPanel.repaint();
+				
 				newBtnParam.addActionListener(new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
 						// TODO Auto-generated method stub
+						boolean changing;
+						newParamBox.add(removeParam);
 						JPanel panel = new JPanel();
 						JTextField lowBBox = new JTextField(5);
 						JTextField upBBox = new JTextField(5);
 						JLabel lowLabel = new JLabel("Initial Value");
 						JLabel upLabel = new JLabel("Final Value");
 						panel.setPreferredSize(new Dimension(500,500));
+						removeParam.addActionListener(new ActionListener() {
+
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								// TODO Auto-generated method stub
+								overallParam.remove(newParamBox);
+								count--;
+								parameters.removeElement(newParam.getText());
+								
+								lowerBounds.removeElement(lowBBox.getText());
+								upperBounds.removeElement(upBBox.getText());
+								myPanel.validate();
+								myPanel.repaint();
+							}
+							
+						});
+						myPanel.validate();
+						myPanel.repaint();
+						
+						
 						DefaultMutableTreeNode param = new DefaultMutableTreeNode("Select Items");
 						String[] paramCat = {"Reactions","Species"};
 						try {
@@ -270,21 +309,31 @@ public class ParameterScan extends AbstractCyAction{
 						}
 						
 						tree = new JTree(param);
-						
+						tree.setShowsRootHandles(true);
+				        tree.setRootVisible(false);
+				        tree.getSelectionModel().setSelectionMode
+				        (TreeSelectionModel.SINGLE_TREE_SELECTION);
 						tree.addTreeSelectionListener(new TreeSelectionListener() {
 
 							@SuppressWarnings("null")
 							public void valueChanged(TreeSelectionEvent e) {
 								// TODO Auto-generated method stub
+								
+								
 								DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
 								if (node==null) 
 									return;
 								
 									
-									
-									Object selectedParam = e.getNewLeadSelectionPath().getLastPathComponent();
-									newParam.setText(selectedParam.toString());	
-									parameters.addElement(newParam.getText());
+									selectedParam = e.getNewLeadSelectionPath().getLastPathComponent();
+									if (((DefaultMutableTreeNode) e.getNewLeadSelectionPath().getLastPathComponent()).isLeaf()) {
+										
+										newParam.setText(selectedParam.toString());	
+										
+
+
+										
+									}
 							}
 							
 							}			
@@ -302,21 +351,25 @@ public class ParameterScan extends AbstractCyAction{
 						int parameterSelection = JOptionPane.showOptionDialog(null, panel, "Select Parameter",JOptionPane.PLAIN_MESSAGE, 1, null, paroptions, paroptions[0]);
 						
 						if (parameterSelection == JOptionPane.OK_OPTION) {
+							parameters.addElement(newParam.getText());
 							newLow.setText(lowBBox.getText());
 							newUp.setText(upBBox.getText());
 							lowerBounds.addElement(lowBBox.getText());
 							upperBounds.addElement(upBBox.getText());
 						}
+						
 					
 					}
 					
 					
 					}	
 						);
+				
+				
 					}
 					
 				});
-				
+			
 		
 		plotObj.addActionListener((ActionListener) new ActionListener() {
 
@@ -350,11 +403,7 @@ public class ParameterScan extends AbstractCyAction{
 			
 			
 		});
-		
-		
-		//myPanel.add(methodBox);
-		//myPanel.add(taskBox);
-		//myPanel.add(create);
+
 		myPanel.add(topBox);
         Object [] options = {plotObj, "OK", "Cancel"};
 		
@@ -411,10 +460,10 @@ public class ParameterScan extends AbstractCyAction{
 			
 			taskMonitor.setProgress(0);
 			
+			
 			String modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 
 			String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
-			//ParsingReportGenerator.getInstance().appendLine("Model String: " + modelString);
 			 dataModel = CRootContainer.addDatamodel();
 			dataModel.loadFromString(modelString);
 			
@@ -427,8 +476,29 @@ public class ParameterScan extends AbstractCyAction{
 			CScanTask scanTask = (CScanTask) dataModel.getTask("Scan");
 			
 			 scanProblem = (CScanProblem) scanTask.getProblem();
-	
+			 if (myTask.toString()=="Time Course") {
+				scanProblem.setSubtask(CTaskEnum.Task_timeCourse);
+				CTrajectoryTask trajectoryTask = (CTrajectoryTask)dataModel.getTask("Time-Course");
+				
+				
+				
+				trajectoryTask.setMethodType(CTaskEnum.Task_timeCourse);
+				trajectoryTask.getProblem().setModel(dataModel.getModel());
+				
+				trajectoryTask.setScheduled(true);
+			
+				
+				CTrajectoryProblem problem = (CTrajectoryProblem)trajectoryTask.getProblem();
+		
+				
+				problem.setDuration(15000.0);
+				problem.setStepNumber((long) (15000));
+				model.setInitialTime(0.0);
+				problem.setTimeSeriesRequested(true);
+				trajectoryTask.processWithOutputFlags(true, (int)CCopasiTask.OUTPUT_UI);
+			 } else {
 				scanProblem.setSubtask(CTaskEnum.Task_steadyState);
+			 }
 		    scanProblem.setOutputInSubtask(false);
 			
 			if (scanData[1].toString().equals("Concentrations")==true) {
@@ -450,7 +520,6 @@ public class ParameterScan extends AbstractCyAction{
 
 				for (int i=0; i<model.getNumReactions(); i++) {
 					displayNames[i]= model.getReaction(i).getObjectDisplayName();
-					System.out.println(displayNames[i]);
 				}
 			}
 		
@@ -472,9 +541,11 @@ public class ParameterScan extends AbstractCyAction{
 					System.err.println("couldn't resolve displayName: " + displayNames[i]);
 					
 				}
-
+				
 			       if (obj instanceof CMetab) {
+			    	  
 			           obj = ((CMetab) obj).getConcentrationReference();
+			    	   
 			       }else if (obj instanceof CReaction) {
 			           obj = ((CReaction) obj).getFluxReference();
 
@@ -504,14 +575,14 @@ public class ParameterScan extends AbstractCyAction{
 			       scanTask.restore();
 			       Object[] currentNetworks = CyActivator.netMgr.getNetworkSet().toArray();
 					
-					currentNetwork = (CyNetwork) currentNetworks[currentNetworks.length-1];
+					currentNetwork = (CyNetwork) currentNetworks[0];
 					CyNetworkView networkView = CyActivator.networkViewManager.getNetworkViews(currentNetwork).iterator().next();
 					int nodenumber = currentNetwork.getNodeCount();
 					java.util.List<CyNode> nodes = currentNetwork.getNodeList();
 					
 			       int numRows = dh.getNumRowsDuring();
 				   	ParsingReportGenerator.getInstance().appendLine("NumRows: " + numRows);
-				   	for (int i= 0; i<nodenumber; i++) {   	
+				   	for (int i= 0; i<nodenumber; i++) { 
 				         FloatStdVector data = dh.getNthRow(0);
 				         for (int j = 0; j < data.size(); j++)
 				         {
@@ -534,11 +605,14 @@ public class ParameterScan extends AbstractCyAction{
 			    	   if (AttributeUtil.get(currentNetwork, nodes.get(i), "display name", String.class).equals(displayNames[j])==true) {
 							AttributeUtil.set(currentNetwork,  nodes.get(i), scanData[1].toString()+":final", data2.get(j), Double.class);
 
-			         System.out.print(data2.get(j));
 						finalValues[j]=data2.get(j);
+						if (finalValues[j]<1E-5&&initialValues[j]<1E-5) {
+							AttributeUtil.set(currentNetwork, nodes.get(i), "change", 0.0, Double.class);
+
+						} else {
 						double difference = finalValues[j]-initialValues[j];
 						percentageChanges[j] = 100*Math.abs(difference)/Math.abs(initialValues[j]);
-						AttributeUtil.set(currentNetwork, nodes.get(i), "perturbation",String.valueOf(Math.round(initialValues[j]*100.0)/100.0)+"->"+ String.valueOf(Math.round(finalValues[j]*100.0)/100.0) , String.class);
+						AttributeUtil.set(currentNetwork, nodes.get(i), "perturbation",String.valueOf(Math.round(initialValues[j]*10000.0)/10000.0)+"->"+ String.valueOf(Math.round(finalValues[j]*10000.0)/10000.0) , String.class);
 
 						if (finalValues[j]==0 && initialValues[j]==0) {
 							AttributeUtil.set(currentNetwork, nodes.get(i), "change", 0.0, Double.class);
@@ -563,6 +637,7 @@ public class ParameterScan extends AbstractCyAction{
 			         if (j + 1 < data2.size())
 			           System.out.print("\t");
 			       }
+			    	   }
 				   	}
 			 
 				   	}
@@ -578,23 +653,127 @@ public class ParameterScan extends AbstractCyAction{
 					visStyle.addVisualMappingFunction(pMapping_color);
 					 CyActivator.visualMappingManager.setCurrentVisualStyle(visStyle);
 				        visStyle.apply(networkView);
-				        networkView.updateView();
-				        if (newModelPanelLabel!=null) {
-					        CyActivator.myCopasiPanel.remove(newModelPanelLabel);
+				        CyLayoutAlgorithm layout = CyActivator.cyLayoutAlgorithmManager.getLayout("force-directed");
 
+				        if (networkView==null) {
+				        	networkView = CyActivator.networkViewManager.getNetworkViews(currentNetwork).iterator().next();
+						}
+				        networkView.updateView();
+			            TaskIterator itr = layout.createTaskIterator(networkView, layout.getDefaultLayoutContext(), CyLayoutAlgorithm.ALL_NODE_VIEWS, "name");
+			            
+			            CyActivator.taskManager.execute(itr);
+				        
+				        
+				        networkView.updateView();
+				        MyCopasiPanel panel = new MyCopasiPanel(cySwingApplication, fileUtil, null, null);
+				        if (resetButton!=null) {
+				        panel.remove(resetButton);
+				        panel.remove(saveButton);
+				        panel.remove(newModelPanelLabel);
+						 for (int i = 0; i<modLabels.length;i++) {
+							 panel.remove(modLabels[i]);
+								 }
+						 panel.validate();
+						 panel.repaint();
 				        }
+						
 				        newModelPanelLabel = new JLabel("Model Perturbation");
 					    Font newModelFont = new Font("Calibri", Font.BOLD, 16);
 					    newModelPanelLabel.setFont(newModelFont);
 					    newModelPanelLabel.setHorizontalAlignment(SwingConstants.CENTER);
 				        CyActivator.myCopasiPanel.add(newModelPanelLabel);
-				        JLabel[] modLabels = new JLabel[finalScanItems.length];
+				         modLabels = new JLabel[finalScanItems.length];
 				        for (int i = 0; i<modLabels.length;i++) {
 				        	modLabels[i]= new JLabel("Changed "+finalScanItems[i]+" from "+finalInit[i].toString()+" to "+finalFinal[i].toString());
 				        	 CyActivator.myCopasiPanel.add(modLabels[i]);
 				        }
-				        JButton resetButton = new JButton("Reset modifications");
+				         resetButton = new JButton("Reset modifications");
 				        CyActivator.myCopasiPanel.add(resetButton);
+				        
+				        saveButton = new JButton("Save modified model");
+				        CyActivator.myCopasiPanel.add(saveButton);
+				        
+				        
+				        saveButton.addActionListener(new ActionListener() {
+
+				        	@Override
+							public void actionPerformed(ActionEvent e) {
+								// TODO Auto-generated method stub
+								
+								
+								Component frame = CyActivator.cytoscapeDesktopService.getJFrame();
+								HashSet<FileChooserFilter> filters = new HashSet<>();
+								
+								FileChooserFilter filter = new FileChooserFilter(".cps", "cps");
+								filters.add(filter);
+							   // FileUtil fileUtil = fileUtil;
+							    
+							    File xmlFile = CyActivator.fileUtil.getFile(frame, "Save File", FileUtil.SAVE, filters);
+							    
+							    final SaveTask task = new SaveTask(xmlFile.getAbsolutePath());
+							    CyActivator.taskManager.execute(new TaskIterator(task));	
+						}
+							
+							class SaveTask extends AbstractTask {
+								
+								private String filePath;
+								private TaskMonitor taskMonitor;
+								
+								public SaveTask(String filePath) {
+									this.filePath = filePath;
+									super.cancelled = false;
+								}
+
+								@Override
+								public void run(TaskMonitor taskMonitor) throws Exception {
+									try {
+									//	myFile.delete();
+										ObjectStdVector changedObjects = new ObjectStdVector();
+										for (int i=0; i<finalScanItems.length; i++) {
+											if(finalScanItems[i].contains("_0")) {
+												String metabName = StringUtils.substringBetween(finalScanItems[i],"[","]");
+												CMetab metabToUpdate = model.findMetabByName(metabName);
+												metabToUpdate.compileIsInitialValueChangeAllowed();
+												metabToUpdate.setInitialConcentration(Double.parseDouble(finalFinal[i].toString()));
+												changedObjects.add(metabToUpdate.getInitialConcentrationReference());
+												model.updateInitialValues(changedObjects);
+												model.compileIfNecessary();
+											} else {
+												CModelValue parToChange = (CModelValue) dataModel.findObjectByDisplayName(finalScanItems[i].toString());
+												parToChange.setDblValue(Double.parseDouble(finalFinal[i].toString()));
+												changedObjects.add(parToChange.getValueReference());
+												model.updateInitialValues(changedObjects);
+												model.compileIfNecessary();
+												
+												
+											}
+										}
+										myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
+								
+									    taskMonitor.setTitle("Saving File");
+										taskMonitor.setProgress(0.4);
+										
+										dataModel.saveModel(filePath ,true);
+										
+										try {
+					    					FileWriter f2 = new FileWriter(myFile, false);
+					    					f2.write(filePath);
+					    					f2.close();
+						
+					    				} catch (Exception e1) {
+					    					// TODO Auto-generated catch block
+					    					e1.printStackTrace();
+							            taskMonitor.setStatusMessage("Saved Copasi Model to " + filePath + ".cps");
+									
+									} 
+									}finally {
+										System.gc();
+									}
+								
+								}
+							}
+				        	
+				        });
 				        resetButton.addActionListener(new ActionListener() {
 
 							@Override
@@ -604,6 +783,14 @@ public class ParameterScan extends AbstractCyAction{
 								nodeTable.deleteColumn("change");
 								nodeTable.deleteColumn("variation");
 								nodeTable.deleteColumn("perturbation");
+								 for (int i = 0; i<modLabels.length;i++) {
+								CyActivator.myCopasiPanel.remove(modLabels[i]);
+								 }
+								 CyActivator.myCopasiPanel.remove(resetButton);
+								 CyActivator.myCopasiPanel.remove(newModelPanelLabel);
+								 CyActivator.myCopasiPanel.remove(saveButton);
+								 CyActivator.myCopasiPanel.validate();
+							     CyActivator.myCopasiPanel.repaint();
 							}
 				        	
 				        });
@@ -611,12 +798,7 @@ public class ParameterScan extends AbstractCyAction{
 				        CyActivator.myCopasiPanel.repaint();
 			    }
 
-			  
-	
 
-		
-	
-	
 	 boolean addScanItem(CScanProblem scanProblem, Object[] scanData) {
 		
 		if (scanData[6] == "Scan") {
@@ -673,14 +855,9 @@ public class ParameterScan extends AbstractCyAction{
 		}
 		return true;
 	}
-	 
-	
 
-		
 }
 	
-
-
 	private void createNodes(DefaultMutableTreeNode item, String[] categoryNames) throws Exception {
 		DefaultMutableTreeNode paramItem = null;
 		DefaultMutableTreeNode paramItem2 = null;

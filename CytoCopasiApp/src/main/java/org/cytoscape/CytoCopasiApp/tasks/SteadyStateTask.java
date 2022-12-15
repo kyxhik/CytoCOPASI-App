@@ -100,7 +100,9 @@ public class SteadyStateTask extends AbstractCyAction {
 	private Boolean backIntegration = false;
 	private String iterationLimit;
 	CyNetwork currentNetwork;
+	CyNetwork previousNetwork;
 	String[] csvColumns;
+	String statMessage;
 	Object[][] csvData;
 	Object[][] csvFlux;
 	double[] specNo;
@@ -108,6 +110,8 @@ public class SteadyStateTask extends AbstractCyAction {
 	double[] speciesAttr;
 	double[] fluxesAttr;
 	double[] totals ;
+	long networkSUID;
+	long newNetworkSUID;
 	Object[][] dataMCA;
     Object[][] transpMCA;
 	JScrollPane f6;
@@ -161,8 +165,8 @@ public class SteadyStateTask extends AbstractCyAction {
 		simspec = setData();
 		}
 		
-		final SteadyTask task = new SteadyTask(simspec, outFile);
-		CyActivator.taskManager.execute(new TaskIterator(task));
+		final SteadyTask parentTask = new SteadyTask(simspec, outFile);
+		CyActivator.taskManager.execute(new TaskIterator(parentTask));
 		
 	}
 
@@ -226,9 +230,9 @@ public class SteadyStateTask extends AbstractCyAction {
     }
 	public class SteadyTask extends AbstractTask {
 		
-	private TaskMonitor taskMonitor;
-	private Object[] simspec;
-	private File outFile;
+	 TaskMonitor taskMonitor;
+	 Object[] simspec;
+	 File outFile;
 	
 	//public SteadyTask (Object[] data, File outFile) {
 
@@ -245,7 +249,9 @@ public class SteadyStateTask extends AbstractCyAction {
 			super.cancelled = false;
 		// TODO Auto-generated constructor stub
 	}
-
+		 
+		 
+		@SuppressWarnings("deprecation")
 		@Override
 		public void run(TaskMonitor taskMonitor) throws Exception {
 		this.taskMonitor = taskMonitor;
@@ -261,10 +267,7 @@ public class SteadyStateTask extends AbstractCyAction {
 		String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 		dm.loadFromString(modelString);
 		CModel model = dm.getModel();	
-		try {
-			
-			
-			
+		
 			CSteadyStateTask task = (CSteadyStateTask)dm.getTask("Steady-State");
 			task.setMethodType(CTaskEnum.Task_steadyState);
 			task.getProblem().setModel(dm.getModel());
@@ -299,7 +302,11 @@ public class SteadyStateTask extends AbstractCyAction {
 			
 			case CSteadyStateMethod.notFound: 
 				taskMonitor.setStatusMessage("Steady State was not found");
-				JOptionPane.showMessageDialog(null, String.format("Steady State was not found"));
+				statMessage = "Steady State was not found";
+				//JOptionPane.showMessageDialog(null, String.format("Steady State was not found"));
+				
+				
+				
 				break;
 			
 			case CSteadyStateMethod.foundEquilibrium: 
@@ -308,7 +315,8 @@ public class SteadyStateTask extends AbstractCyAction {
 			
 			case CSteadyStateMethod.foundNegative: 
 				taskMonitor.setStatusMessage("Could not find a steady state with non-negative concentrations");
-				JOptionPane.showMessageDialog(null, String.format("Could not find a steady state with non-negative concentrations"));
+				statMessage = "Could not find a steady state with non-negative concentrations";
+			//	JOptionPane.showMessageDialog(null, String.format("Could not find a steady state with non-negative concentrations"));
 				
 			//CRootContainer.destroy();
 			return;
@@ -325,8 +333,21 @@ public class SteadyStateTask extends AbstractCyAction {
 			
 			Object[][] dataConc = new Object[(int) numspec][4]; 
 			Object[] currentNetworks = CyActivator.netMgr.getNetworkSet().toArray();
+			networkSUID = CyActivator.listener.getSUID();
+			System.out.println("suid:" + networkSUID);
+			if (currentNetworks.length==1) {
+				currentNetwork = CyActivator.netMgr.getNetwork(networkSUID);
+			}
 			
-			currentNetwork = (CyNetwork) currentNetworks[currentNetworks.length-1];
+			if (currentNetworks.length>1) {
+				newNetworkSUID = CyActivator.listener.getSUID();
+				currentNetwork =  CyActivator.netMgr.getNetwork(newNetworkSUID);
+				if (currentNetwork.getSUID()==((CyNetwork)currentNetworks[0]).getSUID()) {
+					previousNetwork = (CyNetwork) currentNetworks[1];
+				} else {
+					previousNetwork = (CyNetwork) currentNetworks[0];
+				}
+			}
 			CyNetworkView networkView = CyActivator.networkViewManager.getNetworkViews(currentNetwork).iterator().next();
 			csvColumns = new String[4];
 			csvColumns[0]="Name";
@@ -444,9 +465,7 @@ public class SteadyStateTask extends AbstractCyAction {
 	        tabbedPane.add("Compare to a variation", f4);
 	        tabbedPane.add("MCA", f5);
 	        frame.getContentPane().add(tabbedPane);
-	        
-	        
-	        //frame.add(compareButton);
+	      
 	        
 	        compareButton.addActionListener(new ActionListener() {
 
@@ -473,14 +492,9 @@ public class SteadyStateTask extends AbstractCyAction {
 						
 						@Override
 						public void actionPerformed(ActionEvent e) {
-							// TODO Auto-generated method stub
-							Collection<FileChooserFilter> filters = new HashSet<>();
-					    	String[] extensions = {"", "csv"};
-					    	filters.add(new FileChooserFilter("EXCEL files (*, *.csv)", extensions));
-
-					    	File[] files = fileUtil.getFiles(cySwingApplication.getJFrame(), "Open Std St Report", FileDialog.LOAD, filters);
-					    	System.out.println("selected file:"+files[0].getAbsolutePath());
-					    	compareStdSt.compare(files[0], numspec, dataConc, currentNetwork, nodes,speciesAttr, networkView);
+							
+								CompareDifferentNetworks mergeNetworks = new CompareDifferentNetworks(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
+								mergeNetworks.compareDifferentNetworks(currentNetwork, previousNetwork, "concentration");
 						}
 						
 					});
@@ -489,15 +503,8 @@ public class SteadyStateTask extends AbstractCyAction {
 
 						@Override
 						public void actionPerformed(ActionEvent e) {
-							// TODO Auto-generated method stub
-							Collection<FileChooserFilter> filters = new HashSet<>();
-					    	String[] extensions = {"", "csv"};
-					    	filters.add(new FileChooserFilter("EXCEL files (*, *.csv)", extensions));
-
-					    	File[] files = fileUtil.getFiles(cySwingApplication.getJFrame(), "Open Std St Report", FileDialog.LOAD, filters);
-					    	System.out.println("selected file:"+files[0].getAbsolutePath());
-					    	compareStdSt.compare(files[0], numreac, dataFlux, currentNetwork, nodes,fluxesAttr, networkView);
-
+							CompareDifferentNetworks mergeNetworks = new CompareDifferentNetworks(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
+							mergeNetworks.compareDifferentNetworks(currentNetwork, previousNetwork, "flux");
 						}
 						
 					});
@@ -535,10 +542,6 @@ public class SteadyStateTask extends AbstractCyAction {
 	        	
 	        });
 	        
-	        
-	        
-	        
-	       // frame.add(mcaButton);
 	        mcaButton.addActionListener(new ActionListener() {
 	        	
 				@Override
@@ -574,10 +577,6 @@ public class SteadyStateTask extends AbstractCyAction {
 				          
 				          for (int i=0; i<numReactions; i++) {
 
-				         
-				          // set the 2D index that we want to get from the annotated array
-				          // In this case we want the control coefficient for the reaction with itself, so
-				          // the index for both dimensions is the same (i)
 				          index.set(0,i);
 				          for (int j=0; j<numReactions; j++) {
 				          index.set(1,j);
@@ -645,16 +644,107 @@ public class SteadyStateTask extends AbstractCyAction {
 	        	
 	        });
 	        
+			} else if (stdStatus == CSteadyStateMethod.notFound){
+				JLabel stdStWarn = new JLabel("Steady State Not found. Run time course simulation?");
+				JTextField timeCourse = new JTextField(4);
+				JFrame stdStWarnFrame = new JFrame();
+				stdStWarnFrame.add(stdStWarn);
+				stdStWarnFrame.add(timeCourse);
+				//int stdStWarnDialog = JOptionPane.showConfirmDialog(stdStWarnFrame, stdStWarn, null, JOptionPane.DEFAULT_OPTION, 0);
+			//	if (stdStWarnDialog==0) {
+				taskMonitor.setTitle("Steady State Not Found");
+				
+				taskMonitor.setStatusMessage("Steady State Not found, so running a long time course simulation");
+				CTrajectoryTask trajectoryTask = (CTrajectoryTask)dm.getTask("Time-Course");
+	
+				trajectoryTask.setMethodType(CTaskEnum.Task_timeCourse);
+				trajectoryTask.getProblem().setModel(dm.getModel());
+				
+				trajectoryTask.setScheduled(true);
+				//double duration =Double.parseDouble(timeCourse.getText());
+				CTrajectoryProblem problem = (CTrajectoryProblem)trajectoryTask.getProblem();
+				problem.setDuration(15000);
+				problem.setStepNumber((long) 15000);
+				model.setInitialTime(0.0);
+				problem.setTimeSeriesRequested(true);
+				CTrajectoryMethod timeMethod = (CTrajectoryMethod)trajectoryTask.getMethod();
+				CCopasiParameter parameter = timeMethod.getParameter("Absolute Tolerance");
+				parameter.setDblValue(1.0e-12);
+				trajectoryTask.processWithOutputFlags(true, (int)CCopasiTask.OUTPUT_UI);
+				CTimeSeries timeSeries = trajectoryTask.getTimeSeries();
+				int iMax = (int)timeSeries.getNumVariables();
+				int lastIndex = (int)timeSeries.getRecordedSteps() - 1;
+				csvData = new Object[(int) model.getNumMetabs()][2];
+				speciesAttr = new double[(int) model.getNumMetabs()];
+				Object[] currentNetworks = CyActivator.netMgr.getNetworkSet().toArray();
+				networkSUID = CyActivator.listener.getSUID();
+				System.out.println("suid:" + networkSUID);
+				if (currentNetworks.length==1) {
+					
+					currentNetwork = CyActivator.netMgr.getNetwork(networkSUID);
+				}
+				
+				if (currentNetworks.length>1) {
+					newNetworkSUID = CyActivator.listener.getSUID();
+					currentNetwork =  CyActivator.netMgr.getNetwork(newNetworkSUID);
+					if (currentNetwork.getSUID()==((CyNetwork)currentNetworks[0]).getSUID()) {
+						previousNetwork = (CyNetwork) currentNetworks[1];
+					} else {
+						previousNetwork = (CyNetwork) currentNetworks[0];
+					}
+				}
+				int nodenumber = currentNetwork.getNodeCount();
+				java.util.List<CyNode> nodes = currentNetwork.getNodeList();
+				CyNetworkView networkView = CyActivator.networkViewManager.getNetworkViews(currentNetwork).iterator().next();
+		
+				for (int i=0; i<iMax; i++) {
+					csvData[i][0]= timeSeries.getTitle(i);
+					csvData[i][1]= (new Double(timeSeries.getConcentrationData(lastIndex, i)));
+					for (int b= 0; b<nodenumber; b++) {
+
+						if (AttributeUtil.get(currentNetwork, nodes.get(b), "name", String.class).equals(csvData[i][0])==true) {
+							AttributeUtil.set(currentNetwork,  nodes.get(b), "std-st concentration", csvData[i][1], Double.class);
+							System.out.println("Conc:"+AttributeUtil.get(currentNetwork,  nodes.get(b), "std-st concentration", Double.class));
+							speciesAttr[i]= AttributeUtil.get(currentNetwork,  nodes.get(b), "std-st concentration", Double.class);
+							
+						}
+						
+					}
+					
+				}
+				if (currentNetworks.length>1) {
+				JButton timeCompareButton = new JButton("Compare to the previous network");	
+				CyActivator.myCopasiPanel.add(timeCompareButton);
+				
+				
+				timeCompareButton.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						CompareDifferentNetworks mergeNetworks = new CompareDifferentNetworks(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
+						mergeNetworks.compareDifferentNetworks(currentNetwork, previousNetwork, "concentration");
+						
+					}
+					
+				});
+				}
+				//}else {
+				//	cancel();
+
+			//	}
+			} else {
+				cancel();
+		
 			}
-		}catch (Exception e) {
-			throw new Exception("Error while running steady state " + e);
-		} finally {
-			System.gc();
 		}
-		
-		
-		
-		}
+		@Override
+	    public void cancel() {
+			super.cancel();
+			super.cancelled=true;
+			parentTask.cancel();
+			taskMonitor.setProgress(1.0);
+	    }
 	}
 }
 		

@@ -1,7 +1,5 @@
 package org.cytoscape.CytoCopasiApp;
 
-
-
 import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.application.swing.CySwingApplication;
@@ -63,12 +61,9 @@ import org.cytoscape.CytoCopasiApp.actions.NodeDoubleClickTaskFactory;
 import org.cytoscape.CytoCopasiApp.actions.SaveLayoutAction;
 import org.cytoscape.CytoCopasiApp.tasks.Optimize;
 import org.cytoscape.CytoCopasiApp.tasks.ParameterScan;
+import org.cytoscape.CytoCopasiApp.tasks.SensitivityAnalysis;
 import org.cytoscape.CytoCopasiApp.tasks.SteadyStateTask;
 import org.cytoscape.CytoCopasiApp.tasks.TimeCourseSimulationTask;
-
-
-
-
 
 public class CyActivator extends AbstractCyActivator {
 	public static File CopasiDir = null;
@@ -103,11 +98,11 @@ public class CyActivator extends AbstractCyActivator {
     public static MyCopasiPanel myCopasiPanel;
     public static FileUtil fileUtil;
     public static KeggWebLoadAction keggWebLoadAction;
+    public static MyNetworkAddedListener listener; 
     private static Properties keggProps;
     private static File keggPropsFile;
     private static File keggTranslatorJarFile;
    
-    //public static CyEventHelper cyEventHelper;
     public static CyApplicationManager cyApplicationManager;
     public static CyTableManager tableManager;
     public static CyTableFactory tableFactory;
@@ -122,7 +117,6 @@ public class CyActivator extends AbstractCyActivator {
     public static final String SBML_STYLE = "cy3sbml.xml";
     public static File styleDir = null;
     public static File libDir = null;
-    //public static ImportSBML importSBML;
     
     private static File parsingReportFile = null;
     private static File importReportFile = null;
@@ -133,12 +127,6 @@ public class CyActivator extends AbstractCyActivator {
     private static File nativeLibFileWindows;
 	public static CyNetworkFactory networkFactory;
 
-	//public static native final void initCopasi(); 
-    //public CyActivator() {
-    //	super();
-    //}
-    
-		
     
 	@Override
     public void start(BundleContext context) throws Exception {
@@ -158,7 +146,6 @@ public class CyActivator extends AbstractCyActivator {
 		visualStyleFactory = getService(context, VisualStyleFactory.class);
 		tableManager = getService(context, CyTableManager.class);
 		tableFactory = getService(context, CyTableFactory.class);
-        //CySwingApplication cySwingApplication = getService(context, CySwingApplication.class);
         networkViewFactory = getService(context, CyNetworkViewFactory.class);
         networkViewManager = getService(context, CyNetworkViewManager.class);
         cySwingApplication = getService(context,CySwingApplication.class);
@@ -167,7 +154,7 @@ public class CyActivator extends AbstractCyActivator {
         cyLayoutAlgorithmManager = getService(context, CyLayoutAlgorithmManager.class);
         cyLayoutAlgorithm= getService(context, CyLayoutAlgorithm.class);
         cyAppConfig = getService(context, CyApplicationConfiguration.class);
-        CyApplicationManager cyApplicationManager = getService(context, CyApplicationManager.class);
+        cyApplicationManager = getService(context, CyApplicationManager.class);
         
         cyEventHelper = getService(context, CyEventHelper.class);
         fileUtil = getService(context, FileUtil.class);
@@ -186,21 +173,23 @@ public class CyActivator extends AbstractCyActivator {
        registerService(context, myCopasiPanel, CytoPanelComponent.class, properties);
        saveLayoutAction = new SaveLayoutAction(cySwingApplication, fileUtil);
        registerService(context, saveLayoutAction, CyAction.class, properties);
-        importAction = new ImportAction(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
-        registerService(context, importAction, CyAction.class, properties);
+       importAction = new ImportAction(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
+       registerService(context, importAction, CyAction.class, properties);
         
-       
+        listener = new MyNetworkAddedListener();
+       registerService(context, listener, NetworkAddedListener.class, new Properties());
+
  
         TimeCourseSimulationTask timeCourseSimulationTask = new TimeCourseSimulationTask(cySwingApplication, fileUtil);
-        //  PlotDataFactory plotDataFactory = new PlotDataFactory();
           SteadyStateTask steadyStateTask = new SteadyStateTask(cySwingApplication, fileUtil, loadNetworkFileTaskFactory, synchronousTaskManager);
           Optimize optimize = new Optimize(cySwingApplication, fileUtil);
           ParameterScan parameterScan = new ParameterScan(cySwingApplication, fileUtil);
-         
+          SensitivityAnalysis sensitivityAnalysis = new SensitivityAnalysis(cySwingApplication, fileUtil);
           registerService(context,timeCourseSimulationTask,CyAction.class,properties);
           registerService(context,steadyStateTask, CyAction.class, properties);
           registerService(context,optimize, CyAction.class, properties);
           registerService(context,parameterScan, CyAction.class,properties);
+          registerService(context,sensitivityAnalysis, CyAction.class,properties);
         CopasiFileFilter copasiFilter = new CopasiFileFilter(streamUtil);
         copasiReaderTaskFactory = new CopasiReaderTaskFactory(copasiFilter, networkFactory, networkViewFactory, cyLayoutAlgorithmManager);
        
@@ -224,9 +213,7 @@ public class CyActivator extends AbstractCyActivator {
         registerService(context, nodeDoubleClickTaskFactory, NodeViewTaskFactory.class, doubleClickProperties);
 
 	}
-	
-	
-	
+
 	private static void createPluginDirectory() {
         File appConfigDir = cyAppConfig.getConfigurationDirectoryLocation();
         
@@ -240,12 +227,9 @@ public class CyActivator extends AbstractCyActivator {
             if (!CopasiDir.mkdir())
                 LoggerFactory.getLogger(CyActivator.class).
                         error("Failed to create directory " + CopasiDir.getAbsolutePath());
-
-        
+   
 }
-	
-	
-	
+
 	public static File getReportFile(int type) {
         if (type == PARSING)
             return getReportFile(parsingReportFile, PARSIN_LOG_NAME);
@@ -254,15 +238,6 @@ public class CyActivator extends AbstractCyActivator {
         throw new IllegalArgumentException(String.format("The report type %d is not valid", type));
         
 }
-	/*public static File getStyleFile(int type) {
-		if (type == COPASI)
-			return getStyleCopasiFile(styleCopasiFile, COPASI_STYLE);
-		if (type == SBML)
-			return getStyleSbmlFile(styleSbmlFile, SBML_STYLE);
-        throw new IllegalArgumentException(String.format("The style %d is not valid", type));
-
-	}*/
-	
 	
 	public static File getReportFile(File reportFile, String reportFileName) {
         File loggingDir = null;
@@ -314,8 +289,6 @@ public class CyActivator extends AbstractCyActivator {
 
         return impoFile;
 	}
-	
-	
 	
 	private static File setLoggingDirectory() {
         File loggingDir = new File(getCopasiDir(), "logs");

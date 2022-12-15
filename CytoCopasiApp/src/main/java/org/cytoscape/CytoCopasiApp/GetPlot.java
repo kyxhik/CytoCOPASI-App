@@ -47,7 +47,6 @@ public class GetPlot {
     public void create(String title, Object[] myspecies, double[] time, double[][] concdata, String timeUnit, String concUnit) {
     	
     	JFrame f = new JFrame(title);
-    	//f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.add(progressBar, BorderLayout.NORTH);
         JFreeChart chart = ChartFactory.createXYLineChart(title, "time (" + timeUnit+ ")", "concentration ("+concUnit+"/l)", getDataset(myspecies, time, concdata), PlotOrientation.VERTICAL,true, true, false);
         XYPlot plot = chart.getXYPlot();
@@ -56,19 +55,6 @@ public class GetPlot {
         plot.setBackgroundPaint(Color.WHITE);
         
        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
-       XYItemRenderer renderer1 = plot.getRenderer(); 
-        renderer1.setSeriesPaint(0, Color.BLACK);
-        renderer1.setSeriesPaint(1, Color.BLACK);
-        renderer1.setSeriesPaint(2, Color.BLACK);
-        renderer1.setSeriesPaint(3, Color.BLACK);
-        renderer1.setDefaultStroke(new BasicStroke(1.0f));   
-        for (int b=0; b<myspecies.length;b++) {
-        annotation = new XYTextAnnotation("["+myspecies[b].toString()+"]", 50, concdata[(time.length/2)-1][b]);
-        annotation.setFont(new Font("Tahoma", Font.PLAIN, 18));
-        plot.addAnnotation(annotation);
-        }
-        plot.setRenderer(0, renderer1);
-       // renderer.setSeriesPaint(4, Color.MAGENTA);
        
         f.add(new ChartPanel(chart) {
         	@Override
@@ -99,22 +85,13 @@ public class GetPlot {
 			for (int a=0; a<xlength; a++) {
 				
 				series.add(time[a], concdata[a][b]);
-			
-				
-			
-			
+	
 			
 		}
-			
-			
-			bigseries.addSeries(series); 
+		bigseries.addSeries(series); 
 		}
-		
-		
+	
 		return bigseries;
    }
-   
-   
   
-    
 }

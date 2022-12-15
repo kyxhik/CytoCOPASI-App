@@ -63,6 +63,7 @@ import org.cytoscape.CytoCopasiApp.newmodel.NewSpecies;
 import org.cytoscape.CytoCopasiApp.newmodel.ParameterOverview;
 import org.cytoscape.CytoCopasiApp.tasks.Optimize;
 import org.cytoscape.CytoCopasiApp.tasks.ParameterScan;
+import org.cytoscape.CytoCopasiApp.tasks.SensitivityAnalysis;
 import org.cytoscape.CytoCopasiApp.tasks.SteadyStateTask;
 import org.cytoscape.CytoCopasiApp.tasks.TimeCourseSimulationTask;
 import org.cytoscape.CytoCopasiApp.actions.SaveLayoutAction.SaveTask;
@@ -233,7 +234,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 		JButton steadyState = new JButton("Steady State Calculation");
 		JButton optimize = new JButton("Optimization");
 		JButton parameterScan = new JButton("Parameter Scan");
-		
+		JButton sensitivityAnalysis = new JButton("Sensitivity Analysis");
 		add(newModel);
 		add(importModel);
 		add(importKegg);
@@ -241,6 +242,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 		add(steadyState);
 		add(optimize);
 		add(parameterScan);
+		add(sensitivityAnalysis);
 		validate();
 		repaint();
 		
@@ -253,9 +255,6 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 		preview = new JButton("Parameter Overview");
 		newModelBox = Box.createHorizontalBox();					
 		newModelActionBox = Box.createHorizontalBox();
-		//newModelBox = Box.createVerticalBox();
-		//add(newModel);
-		
 		
 		importModel.addActionListener(new ActionListener() {
 
@@ -277,7 +276,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				add(newModelActionBox);
 				
 				String modelName;
-				dm = CRootContainer.addDatamodel();
+				 dm = CRootContainer.addDatamodel();
 				try {
 					 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 
@@ -311,9 +310,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 							changedObjects=new ObjectStdVector();
 							object = model.getInitialValueReference();
 							addReaction.addReaction(model.getQuantityUnit(), model.getTimeUnit(), impNetwork, object, changedObjects);
-						
-						
-						
+				
 						}
 					
 				});
@@ -382,11 +379,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 							try {
 							//	myFile.delete();
 								myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
-								
-							//	model.compileIfNecessary();
-
-							   
-							  //  model.updateInitialValues(changedObjects);
+						
 							    taskMonitor.setTitle("Saving File");
 								taskMonitor.setProgress(0.4);
 								
@@ -409,9 +402,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 						
 						}
 					}
-					
-					
-					
+		
 				});
 				resetButton.addActionListener(new ActionListener() {
 
@@ -424,7 +415,6 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					// TODO Auto-generated method stub
 					String modelName;
 					dm = CRootContainer.addDatamodel();
 					try {
@@ -450,8 +440,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					
 					FileChooserFilter filter = new FileChooserFilter(".xml", "xml");
 					filters.add(filter);
-				   // FileUtil fileUtil = fileUtil;
-				    
+			    
 				    File xmlFile = CyActivator.fileUtil.getFile(frame, "Save File", FileUtil.SAVE, filters);
 				    
 				    final SaveTask task = new SaveTask(xmlFile.getAbsolutePath());
@@ -471,18 +460,16 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					@Override
 					public void run(TaskMonitor taskMonitor) throws Exception {
 						try {
-							//myFile.delete();
+							
 							myFile = new File(CyActivator.getReportFile(1).getAbsolutePath());
 							
 							model.compileIfNecessary();
 
-						   
-						   // model.updateInitialValues(changedObjects);
 						    taskMonitor.setTitle("Saving File");
 							taskMonitor.setProgress(0.4);
 							
 							//dataModel.saveModel(filePath ,true);
-							dm.exportSBML(filePath, true);
+							dm.exportSBML(filePath, true,2,4);
 							try {
 		    					f2 = new FileWriter(myFile, false);
 		    					f2.write(filePath);
@@ -559,8 +546,6 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 							changedObjects=new ObjectStdVector();
 							object = model.getInitialValueReference();
 							addReaction.addReaction(model.getQuantityUnit(), model.getTimeUnit(), impNetwork, object, changedObjects);
-						
-						
 						
 						}
 					
@@ -660,8 +645,6 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 						}
 					}
 					
-					
-					
 				});
 			exportModel.addActionListener(new ActionListener() {
 
@@ -673,7 +656,6 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					try {
 						 modelName = new Scanner(CyActivator.getReportFile(1)).useDelimiter("\\Z").next();
 
-						
 						String modelString = new Scanner(new File(modelName)).useDelimiter("\\Z").next();
 						if (modelName.endsWith(".cps")) {
 						
@@ -746,7 +728,6 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				
 			});
 
-			
 			}
 			
 		});
@@ -864,8 +845,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 					//add(newModelBox);
 					validate();
 					repaint();
-					
-					
+			
 					newSpecies.addActionListener(new ActionListener() {
 
 						@Override
@@ -877,8 +857,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 						}
 						
 					} );
-					
-					
+				
 					newReaction.addActionListener(new ActionListener() {
 						
 					//	String chemEqString; 
@@ -908,9 +887,7 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 						}
 					
 				});
-					
-					
-					
+			
 					preview.addActionListener(new ActionListener() {
 
 						@Override
@@ -1154,6 +1131,17 @@ public class MyCopasiPanel extends JPanel implements CytoPanelComponent {
 				// TODO Auto-generated method stub
 				ParameterScan parameterScanTask = new ParameterScan(cySwingApplication, fileUtil);
 				parameterScanTask.actionPerformed(e);
+			}
+			
+		});
+		
+		sensitivityAnalysis.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				SensitivityAnalysis sensitivityTask = new SensitivityAnalysis(cySwingApplication, fileUtil);
+				sensitivityTask.actionPerformed(e);
 			}
 			
 		});

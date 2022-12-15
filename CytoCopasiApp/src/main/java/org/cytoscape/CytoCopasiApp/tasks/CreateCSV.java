@@ -16,7 +16,12 @@ public class CreateCSV {
 	PrintWriter writer; 
 	File file;
 	public File writeDataAtOnce(String type, String filePath, Object[][] csvData, String[] columnNames, double[] timeData) throws IOException {
+		if (filePath.contains("xml")==true) {
 		file = new File(filePath.replace(".xml", "_"+type+".csv"));
+		} else {
+			file = new File(filePath.replace(".cps", "_"+type+".csv"));
+
+		}
 		List<String> headerRow;
 		writer = new PrintWriter(file);
 			List<String[]> data = new ArrayList<>();
